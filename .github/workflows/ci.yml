@@ -56,6 +56,14 @@ jobs:
             file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so
           } 2>&1 | tee "$STAGE/android-cloudflared.log"
 
+      - name: Dependency diagnostic（shizuku/websocket 是否在编译类路径上）
+        shell: bash
+        working-directory: android
+        run: |
+          gradle --no-daemon :app:dependencies --configuration debugCompileClasspath 2>&1 \
+            | grep -Ei "shizuku|Java-WebSocket|FAILED|Could not|ERROR|com.android.tools" \
+            | tee "$STAGE/android-deps.log" || true
+
       - name: Unit tests
         shell: bash
         working-directory: android

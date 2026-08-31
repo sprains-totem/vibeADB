@@ -104,6 +104,21 @@ func dialTest(t *testing.T, gw *httptest.Server) *RPCClient {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// 与 dialAndAuth 一致：先发鉴权帧
+	authReq, _ := json.Marshal(map[string]any{"op": "auth", "password": "pw"})
+	if err := conn.WriteMessage(websocket.TextMessage, authReq); err != nil {
+		t.Fatal(err)
+	}
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var a struct {
+		OK bool `json:"ok"`
+	}
+	if err := json.Unmarshal(msg, &a); err != nil || !a.OK {
+		t.Fatalf("auth failed: %s", msg)
+	}
 	return &RPCClient{conn: conn}
 }
 
