@@ -1,0 +1,120 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "android/**"
+      - "worker/**"
+      - "agent/**"
+      - "protocol/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "android/**"
+      - "worker/**"
+      - "agent/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Download cloudflared (arm64-v8a)
+        run: |
+          VER=$(curl -fsSL https://api.github.com/repos/cloudflare/cloudflared/releases/latest | jq -r .tag_name)
+          echo "cloudflared version: $VER"
+          mkdir -p android/app/src/main/jniLibs/arm64-v8a
+          curl -fsSL -o android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so \
+            "https://github.com/cloudflare/cloudflared/releases/download/${VER}/cloudflared-linux-arm64"
+          file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so
+
+      - name: Unit tests
+        working-directory: android
+        run: gradle --no-daemon :app:testDebugUnitTest
+
+      - name: Build release APK（临时签名，仅验证可构建；正式发布见 release.yml）
+        working-directory: android
+        env:
+          VIBEADB_STORE_FILE: ${{ github.workspace }}/ci-keystore.jks
+          VIBEADB_STORE_PASSWORD: vibeadb123
+          VIBEADB_KEY_PASSWORD: vibeadb123
+          VIBEADB_KEY_ALIAS: vibeadb
+        run: |
+          keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/ci-keystore.jks" \
+            -storepass vibeadb123 -keypass vibeadb123 -alias vibeadb \
+            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB"
+          gradle --no-daemon :app:assembleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibeADB-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+
+  worker:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm install
+      - run: npm test
+      - run: npx wrangler deploy --dry-run --outdir=dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibeADB-worker
+          path: |
+            worker/dist/
+            worker/wrangler.toml
+            worker/DEPLOY.md
+
+  agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - run: go mod tidy
+      - run: go vet ./...
+      - run: go test ./...
+
+      - name: Build binaries
+        run: |
+          mkdir -p dist
+          GOOS=linux   GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-linux-amd64 .
+          GOOS=linux   GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-linux-arm64 .
+          GOOS=darwin  GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-darwin-amd64 .
+          GOOS=darwin  GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-darwin-arm64 .
+          GOOS=windows GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-windows-amd64.exe .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibeADB-agent
+          path: agent/dist/

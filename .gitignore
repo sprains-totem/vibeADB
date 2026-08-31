@@ -1,0 +1,28 @@
+# Android
+.gradle/
+build/
+app/build/
+local.properties
+*.keystore
+!debug.keystore
+.kotlin/
+app/src/main/jniLibs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Node / Worker
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+
+# Go
+agent/vibeadb
+agent/dist/
+
+# Misc
+*.log
+.DS_Store
