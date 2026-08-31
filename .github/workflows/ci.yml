@@ -17,6 +17,9 @@ on:
       - ".github/workflows/ci.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -35,19 +38,25 @@ jobs:
           gradle-version: "8.10.2"
 
       - name: Download cloudflared (arm64-v8a)
+        shell: bash
         run: |
+          set -o pipefail
           VER=$(curl -fsSL https://api.github.com/repos/cloudflare/cloudflared/releases/latest | jq -r .tag_name)
-          echo "cloudflared version: $VER"
+          echo "cloudflared version: $VER" | tee /tmp/android-cloudflared.log
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           curl -fsSL -o android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so \
             "https://github.com/cloudflare/cloudflared/releases/download/${VER}/cloudflared-linux-arm64"
-          file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so
+          file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so 2>&1 | tee -a /tmp/android-cloudflared.log
 
       - name: Unit tests
+        shell: bash
         working-directory: android
-        run: gradle --no-daemon :app:testDebugUnitTest
+        run: |
+          set -o pipefail
+          gradle --no-daemon :app:testDebugUnitTest 2>&1 | tee /tmp/android-test.log
 
       - name: Build release APK（临时签名，仅验证可构建；正式发布见 release.yml）
+        shell: bash
         working-directory: android
         env:
           VIBEADB_STORE_FILE: ${{ github.workspace }}/ci-keystore.jks
@@ -55,15 +64,41 @@ jobs:
           VIBEADB_KEY_PASSWORD: vibeadb123
           VIBEADB_KEY_ALIAS: vibeadb
         run: |
+          set -o pipefail
           keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/ci-keystore.jks" \
             -storepass vibeadb123 -keypass vibeadb123 -alias vibeadb \
-            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB"
-          gradle --no-daemon :app:assembleRelease
+            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB" \
+            > /tmp/android-build.log 2>&1
+          gradle --no-daemon :app:assembleRelease 2>&1 | tee -a /tmp/android-build.log
 
       - uses: actions/upload-artifact@v4
         with:
           name: vibeADB-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: android
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/android-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: android | conclusion: $CONCLUSION | sha: ${GITHUB_SHA:0:7}" > "/tmp/ci-logs/android-${GITHUB_SHA:0:7}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: android ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs
 
   worker:
     runs-on: ubuntu-latest
@@ -77,9 +112,18 @@ jobs:
         with:
           node-version: "20"
 
-      - run: npm install
-      - run: npm test
-      - run: npx wrangler deploy --dry-run --outdir=dist
+      - name: Install & test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm install 2>&1 | tee /tmp/worker-install.log
+          npm test 2>&1 | tee /tmp/worker-test.log
+
+      - name: wrangler dry-run build
+        shell: bash
+        run: |
+          set -o pipefail
+          npx wrangler deploy --dry-run --outdir=dist 2>&1 | tee /tmp/worker-build.log
 
       - uses: actions/upload-artifact@v4
         with:
@@ -88,6 +132,31 @@ jobs:
             worker/dist/
             worker/wrangler.toml
             worker/DEPLOY.md
+
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: worker
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/worker-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: worker | conclusion: $CONCLUSION | sha: ${GITHUB_SHA:0:7}" > "/tmp/ci-logs/worker-${GITHUB_SHA:0:7}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          cd "$(git rev-parse --show-toplevel)" 2>/dev/null || true
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: worker ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs
 
   agent:
     runs-on: ubuntu-latest
@@ -101,14 +170,20 @@ jobs:
         with:
           go-version: "1.22"
 
-      - run: go mod tidy
-      - run: go vet ./...
-      - run: go test ./...
+      - name: Vet & test
+        shell: bash
+        run: |
+          set -o pipefail
+          go mod tidy 2>&1 | tee /tmp/agent-mod.log
+          go vet ./... 2>&1 | tee /tmp/agent-vet.log
+          go test ./... 2>&1 | tee /tmp/agent-test.log
 
       - name: Build binaries
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p dist
-          GOOS=linux   GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-linux-amd64 .
+          GOOS=linux   GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-linux-amd64 . 2>&1 | tee /tmp/agent-build.log
           GOOS=linux   GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-linux-arm64 .
           GOOS=darwin  GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-darwin-amd64 .
           GOOS=darwin  GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-darwin-arm64 .
@@ -118,3 +193,28 @@ jobs:
         with:
           name: vibeADB-agent
           path: agent/dist/
+
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: agent
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/agent-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: agent | conclusion: $CONCLUSION | sha: ${GITHUB_SHA:0:7}" > "/tmp/ci-logs/agent-${GITHUB_SHA:0:7}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          cd "$(git rev-parse --show-toplevel)" 2>/dev/null || true
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: agent ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs

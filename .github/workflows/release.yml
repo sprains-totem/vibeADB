@@ -25,13 +25,15 @@ jobs:
           gradle-version: "8.10.2"
 
       - name: Download cloudflared (arm64-v8a)
+        shell: bash
         run: |
+          set -o pipefail
           VER=$(curl -fsSL https://api.github.com/repos/cloudflare/cloudflared/releases/latest | jq -r .tag_name)
-          echo "cloudflared version: $VER"
+          echo "cloudflared version: $VER" | tee /tmp/android-cloudflared.log
           mkdir -p android/app/src/main/jniLibs/arm64-v8a
           curl -fsSL -o android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so \
             "https://github.com/cloudflare/cloudflared/releases/download/${VER}/cloudflared-linux-arm64"
-          file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so
+          file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so 2>&1 | tee -a /tmp/android-cloudflared.log
 
       - name: Prepare signing keystore
         id: ks
@@ -63,17 +65,23 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Unit tests
+        shell: bash
         working-directory: android
-        run: gradle --no-daemon :app:testDebugUnitTest
+        run: |
+          set -o pipefail
+          gradle --no-daemon :app:testDebugUnitTest 2>&1 | tee /tmp/android-test.log
 
       - name: Build release APK
+        shell: bash
         working-directory: android
         env:
           VIBEADB_STORE_FILE: ${{ github.workspace }}/release.keystore
           VIBEADB_STORE_PASSWORD: ${{ steps.ks.outputs.store_pass }}
           VIBEADB_KEY_PASSWORD: ${{ steps.ks.outputs.key_pass }}
           VIBEADB_KEY_ALIAS: ${{ steps.ks.outputs.key_alias }}
-        run: gradle --no-daemon :app:assembleRelease
+        run: |
+          set -o pipefail
+          gradle --no-daemon :app:assembleRelease 2>&1 | tee /tmp/android-build.log
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk "vibeadb-${{ github.ref_name }}-release.apk"
@@ -90,6 +98,30 @@ jobs:
         with:
           files: vibeadb-*-release.apk
 
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: android-release
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/android-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: android-release | conclusion: $CONCLUSION | tag: ${GITHUB_REF_NAME}" > "/tmp/ci-logs/android-release-${GITHUB_REF_NAME}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: android-release ${CONCLUSION} ${GITHUB_REF_NAME}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs
+
   worker-release:
     runs-on: ubuntu-latest
     defaults:
@@ -102,9 +134,13 @@ jobs:
         with:
           node-version: "20"
 
-      - run: npm install
-      - run: npm test
-      - run: npx wrangler deploy --dry-run --outdir=dist
+      - name: Install & test & build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm install 2>&1 | tee /tmp/worker-install.log
+          npm test 2>&1 | tee /tmp/worker-test.log
+          npx wrangler deploy --dry-run --outdir=dist 2>&1 | tee /tmp/worker-build.log
 
       - name: Package worker file
         run: |
@@ -115,6 +151,31 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: vibeadb-worker-*.zip
+
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: worker-release
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/worker-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: worker-release | conclusion: $CONCLUSION | tag: ${GITHUB_REF_NAME}" > "/tmp/ci-logs/worker-release-${GITHUB_REF_NAME}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          cd "$(git rev-parse --show-toplevel)" 2>/dev/null || true
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: worker-release ${CONCLUSION} ${GITHUB_REF_NAME}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs
 
   agent-release:
     runs-on: ubuntu-latest
@@ -128,14 +189,20 @@ jobs:
         with:
           go-version: "1.22"
 
-      - run: go mod tidy
-      - run: go vet ./...
-      - run: go test ./...
+      - name: Vet & test
+        shell: bash
+        run: |
+          set -o pipefail
+          go mod tidy 2>&1 | tee /tmp/agent-mod.log
+          go vet ./... 2>&1 | tee /tmp/agent-vet.log
+          go test ./... 2>&1 | tee /tmp/agent-test.log
 
       - name: Build binaries
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p dist
-          GOOS=linux   GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-linux-amd64 .
+          GOOS=linux   GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-linux-amd64 . 2>&1 | tee /tmp/agent-build.log
           GOOS=linux   GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-linux-arm64 .
           GOOS=darwin  GOARCH=amd64 go build -trimpath -o dist/vibeadb-agent-darwin-amd64 .
           GOOS=darwin  GOARCH=arm64 go build -trimpath -o dist/vibeadb-agent-darwin-arm64 .
@@ -150,3 +217,28 @@ jobs:
             agent/dist/vibeadb-agent-darwin-amd64
             agent/dist/vibeadb-agent-darwin-arm64
             agent/dist/vibeadb-agent-windows-amd64.exe
+
+      - name: Report to ci-logs branch
+        if: always()
+        env:
+          JOB_NAME: agent-release
+          CONCLUSION: ${{ job.status }}
+        run: |
+          set -e
+          mkdir -p /tmp/ci-logs
+          cp -f /tmp/agent-*.log /tmp/ci-logs/ 2>/dev/null || true
+          echo "job: agent-release | conclusion: $CONCLUSION | tag: ${GITHUB_REF_NAME}" > "/tmp/ci-logs/agent-release-${GITHUB_REF_NAME}.marker"
+          git config user.name "ci-log-bot"
+          git config user.email "ci-log-bot@users.noreply.github.com"
+          git fetch --depth=1 origin ci-logs 2>/dev/null || true
+          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+            git checkout --detach FETCH_HEAD
+          else
+            git checkout --detach
+          fi
+          cd "$(git rev-parse --show-toplevel)" 2>/dev/null || true
+          mkdir -p ci-logs
+          cp -f /tmp/ci-logs/* ci-logs/ 2>/dev/null || true
+          git add -A ci-logs
+          git commit -m "ci: agent-release ${CONCLUSION} ${GITHUB_REF_NAME}" --allow-empty
+          git push origin HEAD:refs/heads/ci-logs
