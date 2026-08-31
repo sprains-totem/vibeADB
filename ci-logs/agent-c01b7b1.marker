@@ -1,0 +1,9 @@
+job: agent | conclusion: failure | sha: c01b7b1
+--- staging dir ---
+total 20
+drwxr-xr-x  2 runner runner 4096 Aug 31 18:15 .
+drwxr-xr-x 10 runner runner 4096 Aug 31 18:15 ..
+-rw-r--r--  1 runner runner   68 Aug 31 18:15 agent-c01b7b1.marker
+-rw-r--r--  1 runner runner   52 Aug 31 18:15 agent-mod.log
+-rw-r--r--  1 runner runner  291 Aug 31 18:15 agent-test.log
+-rw-r--r--  1 runner runner    0 Aug 31 18:15 agent-vet.log
