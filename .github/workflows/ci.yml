@@ -105,7 +105,7 @@ jobs:
           fi
           mkdir -p ci-logs
           cp -f "$STAGE"/* ci-logs/ || true
-          git add -A ci-logs
+          git add -A -f ci-logs
           git commit -m "ci: android ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
           git push origin HEAD:refs/heads/ci-logs
 
@@ -170,7 +170,7 @@ jobs:
           cd "$(git rev-parse --show-toplevel)"
           mkdir -p ci-logs
           cp -f "$STAGE"/* ci-logs/ || true
-          git add -A ci-logs
+          git add -A -f ci-logs
           git commit -m "ci: worker ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
           git push origin HEAD:refs/heads/ci-logs
 
@@ -238,6 +238,6 @@ jobs:
           cd "$(git rev-parse --show-toplevel)"
           mkdir -p ci-logs
           cp -f "$STAGE"/* ci-logs/ || true
-          git add -A ci-logs
+          git add -A -f ci-logs
           git commit -m "ci: agent ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
           git push origin HEAD:refs/heads/ci-logs

@@ -25,5 +25,7 @@ agent/dist/
 
 # Misc
 *.log
+!.ci-staging/*.log
+!ci-logs/**/*.log
 .DS_Store
 .ci-staging/

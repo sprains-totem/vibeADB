@@ -109,9 +109,9 @@ class GatewayWsServer(host: String, port: Int, private val password: String) :
 
     private fun sweepIdle() {
         val now = System.currentTimeMillis()
-        for ((conn, last) in lastActivity) {
-            if (now - last > IDLE_TIMEOUT_MS) {
-                try { conn.close(4000, "idle timeout") } catch (_: Exception) {}
+        for (e in lastActivity.entries) {
+            if (now - e.value > IDLE_TIMEOUT_MS) {
+                try { e.key.close(4000, "idle timeout") } catch (_: Exception) {}
             }
         }
     }

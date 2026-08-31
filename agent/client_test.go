@@ -174,7 +174,7 @@ func TestDialGatewayViaMailbox(t *testing.T) {
 	}))
 	defer mb.Close()
 
-	tgt, err := ParsePairing("vibeadb://" + strings.TrimPrefix(mb.URL, "http://") + "/dev1#pw")
+	tgt, err := ParsePairing("vibeadb://" + mb.URL + "/dev1#pw") // 带方案前缀，Resolve 原样使用
 	if err != nil {
 		t.Fatal(err)
 	}
