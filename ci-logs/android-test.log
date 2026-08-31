@@ -9,9 +9,9 @@ Daemon will be stopped at the end of the build
 > Task :app:generateDebugResources
 > Task :app:compileDebugAidl
 > Task :app:packageDebugResources
+> Task :app:mergeDebugResources
 > Task :app:createDebugCompatibleScreenManifests
 > Task :app:extractDeepLinksDebug
-> Task :app:mergeDebugResources
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
@@ -22,13 +22,6 @@ Daemon will be stopped at the end of the build
 > Task :app:processDebugResources
 
 > Task :app:compileDebugKotlin
-e: The daemon has terminated unexpectedly on startup attempt #1 with error code: 0. The daemon process output:
-    1. Kotlin compile daemon is ready
-e: The daemon has terminated unexpectedly on startup attempt #2 with error code: 0. The daemon process output:
-    1. Kotlin compile daemon is ready
-Problems may have occurred during auto-selection of GC. The preferred GC is Parallel GC.
-If the problems persist, try adding the JVM option to the Kotlin daemon JVM arguments: -XX:-UseParallelGC.
-GC auto-selection logic is disabled temporary for the next daemon startup.
 e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:43:8 Unresolved reference 'dev'.
 e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:53:9 Unresolved reference 'Shizuku'.
 e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:53:53 Cannot infer type for this parameter. Please specify it explicitly.
@@ -58,7 +51,7 @@ e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibead
 e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:35 Unresolved reference 'Shizuku'.
 
 > Task :app:compileDebugKotlin FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1788200172280.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_4-1788217743620.json
 
 FAILURE: Build failed with an exception.
 
@@ -73,5 +66,5 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 26s
+BUILD FAILED in 22s
 17 actionable tasks: 17 executed

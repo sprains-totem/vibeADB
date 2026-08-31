@@ -1,0 +1,10 @@
++--- dev.rikka.shizuku:api:13.1.5
+|    +--- dev.rikka.shizuku:aidl:13.1.5
+|    \--- dev.rikka.shizuku:shared:13.1.5
++--- dev.rikka.shizuku:provider:13.1.5
++--- org.java-websocket:Java-WebSocket:1.5.7
++--- dev.rikka.shizuku:api:{strictly 13.1.5} -> 13.1.5 (c)
++--- dev.rikka.shizuku:provider:{strictly 13.1.5} -> 13.1.5 (c)
++--- org.java-websocket:Java-WebSocket:{strictly 1.5.7} -> 1.5.7 (c)
++--- dev.rikka.shizuku:aidl:{strictly 13.1.5} -> 13.1.5 (c)
++--- dev.rikka.shizuku:shared:{strictly 13.1.5} -> 13.1.5 (c)
