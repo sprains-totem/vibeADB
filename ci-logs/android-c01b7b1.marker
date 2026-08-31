@@ -1,0 +1,8 @@
+job: android | conclusion: failure | sha: c01b7b1
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Aug 31 18:16 .
+drwxr-xr-x 10 runner runner 4096 Aug 31 18:15 ..
+-rw-r--r--  1 runner runner   70 Aug 31 18:16 android-c01b7b1.marker
+-rw-r--r--  1 runner runner  529 Aug 31 18:16 android-cloudflared.log
+-rw-r--r--  1 runner runner 5988 Aug 31 18:16 android-test.log
