@@ -1,0 +1,9 @@
+job: worker | conclusion: success | sha: c01b7b1
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Aug 31 18:15 .
+drwxr-xr-x 10 runner runner 4096 Aug 31 18:15 ..
+-rw-r--r--  1 runner runner  757 Aug 31 18:15 worker-build.log
+-rw-r--r--  1 runner runner   69 Aug 31 18:15 worker-c01b7b1.marker
+-rw-r--r--  1 runner runner  518 Aug 31 18:15 worker-install.log
+-rw-r--r--  1 runner runner  529 Aug 31 18:15 worker-test.log
