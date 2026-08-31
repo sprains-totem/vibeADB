@@ -26,3 +26,4 @@ agent/dist/
 # Misc
 *.log
 .DS_Store
+.ci-staging/
