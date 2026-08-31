@@ -1,7 +1,1 @@
---- FAIL: TestCallWithChunks (0.00s)
-    client_test.go:123: websocket: close 1006 (abnormal closure): unexpected EOF
---- FAIL: TestCallWithUpload (0.00s)
-    client_test.go:148: write tcp 127.0.0.1:38206->127.0.0.1:44359: write: connection reset by peer
-FAIL
-FAIL	vibeadb/agent	0.006s
-FAIL
+ok  	vibeadb/agent	0.005s
