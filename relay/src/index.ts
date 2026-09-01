@@ -143,6 +143,20 @@ export class Relay {
     }
   }
 
+  /** Hibernation API 运行时回调：收到帧 → 转发 */
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    this.onMessage(ws as unknown as WsLike, message);
+  }
+
+  /** Hibernation API 运行时回调：连接关闭 → 通知对端 */
+  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
+    this.onClose(ws as unknown as WsLike);
+  }
+
+  async webSocketError(ws: WebSocket, err: unknown): Promise<void> {
+    /* ignore */
+  }
+
   onClose(ws: WsLike): void {
     const role = this.roleOf(ws);
     if (role === "device") {
