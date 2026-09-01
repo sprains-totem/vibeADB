@@ -1,0 +1,13 @@
+job: android | conclusion: success | sha: 12f2e8a
+--- progress ---
+13:38:50 job start
+13:39:59 unit tests done
+13:40:36 assemble done
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 13:40 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 13:40 ..
+-rw-r--r--  1 runner runner  154 Sep  1 13:40 android-12f2e8a.marker
+-rw-r--r--  1 runner runner 2727 Sep  1 13:40 android-build.log
+-rw-r--r--  1 runner runner   67 Sep  1 13:40 android-progress.log
+-rw-r--r--  1 runner runner 1564 Sep  1 13:39 android-test.log
