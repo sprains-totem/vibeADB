@@ -31,6 +31,9 @@ class RelayTunnelClient(
             setSocketFactory(SSLSocketFactory.getDefault() as SSLSocketFactory)
         } catch (_: Throwable) {
         }
+        // 30s WS ping 保活：防运营商 NAT/防火墙掐 60s 空闲长连接
+        // （CF 边缘直接应答 pong，不唤醒 DO、不计请求额度）
+        connectionLostTimeout = 30
     }
 
     override fun onOpen(handshakedata: ServerHandshake?) {
