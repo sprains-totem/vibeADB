@@ -5,10 +5,10 @@
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/vibeADB/vibeADB/worker[39m
 
- [32m✓[39m test/index.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 30[2mms[22m[39m
+ [32m✓[39m test/index.test.ts [2m([22m[2m10 tests[22m[2m)[22m[90m 19[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
-[2m   Start at [22m 23:08:26
-[2m   Duration [22m 320ms[2m (transform 57ms, setup 0ms, collect 52ms, tests 30ms, environment 0ms, prepare 63ms)[22m
+[2m   Start at [22m 06:48:22
+[2m   Duration [22m 209ms[2m (transform 36ms, setup 0ms, collect 38ms, tests 19ms, environment 0ms, prepare 41ms)[22m
 
