@@ -54,12 +54,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Shizuku.addRequestPermissionResultListener(1001, shizukuPermListener)
+        Shizuku.addRequestPermissionResultListener(shizukuPermListener)
         setContent { AppUi() }
     }
 
     override fun onDestroy() {
-        Shizuku.removeRequestPermissionResultListener(1001, shizukuPermListener)
+        Shizuku.removeRequestPermissionResultListener(shizukuPermListener)
         super.onDestroy()
     }
 
@@ -245,7 +245,6 @@ class MainActivity : ComponentActivity() {
 
 private fun shizukuStatus(): String = try {
     when {
-        Shizuku.getSuiVersion() > 0 -> "Sui 已就绪"
         !Shizuku.pingBinder() -> "Shizuku 未运行"
         Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED -> "已授权"
         else -> "未授权"
