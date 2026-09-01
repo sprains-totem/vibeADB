@@ -8,8 +8,8 @@ Daemon will be stopped at the end of the build
 > Task :app:stripReleaseDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
 
-> Task :app:buildKotlinToolingMetadata
 > Task :app:checkReleaseDuplicateClasses
+> Task :app:buildKotlinToolingMetadata
 > Task :app:extractReleaseNativeSymbolTables
 > Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
 > Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
@@ -26,22 +26,22 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:mergeReleaseResources
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
-> Task :app:desugarReleaseFileDependencies
+> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileRelease
+> Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
-> Task :app:mergeReleaseShaders
 > Task :app:mergeReleaseArtProfile
+> Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
 > Task :app:generateReleaseAssets UP-TO-DATE
 > Task :app:mergeReleaseAssets
-> Task :app:processReleaseManifestForPackage
 > Task :app:compressReleaseAssets
-> Task :app:extractReleaseVersionControlInfo
 > Task :app:processReleaseResources
+> Task :app:extractReleaseVersionControlInfo
 > Task :app:collectReleaseDependencies
+> Task :app:optimizeReleaseResources
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
-> Task :app:optimizeReleaseResources
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
 > Task :app:mergeExtDexRelease
@@ -56,7 +56,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1788301351134.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1788301889354.json
 
-BUILD SUCCESSFUL in 34s
+BUILD SUCCESSFUL in 35s
 46 actionable tasks: 46 executed
