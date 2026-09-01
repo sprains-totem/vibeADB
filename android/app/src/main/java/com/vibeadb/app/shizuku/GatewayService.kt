@@ -7,7 +7,10 @@ import com.vibeadb.app.gateway.RelayTunnelClient
 
 /**
  * Shizuku UserService：以 shell/root UID 在独立进程运行。
- * v2：进程内维护到边缘中继的出站 WebSocket（自动重连），不再有本地 WS server 与 cloudflared。
+ * v2：进程内维护到边缘中继的出站 WebSocket（自动重连）。
+ *
+ * 关键：start() 可能被多次调用（重开会话/重试）。用代际计数器保证同一进程
+ * 永远只有一个活动循环——新 start 使旧循环立即失效退出，杜绝双腿互踢。
  */
 class GatewayService(private val context: Context?) : IGatewayService.Stub() {
 
@@ -24,12 +27,14 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
             return false
         }
         RingLog.log("gw", "start requested (relay=$relayHost)")
+        generation += 1 // 使任何旧循环立即失效
+        val myGen = generation
         stopTunnel()
         stopped = false
         val t = Thread {
             var backoff = 2L
-            while (!stopped) {
-                RingLog.log("gw", "connecting (backoff was ${backoff}s)")
+            while (!stopped && generation == myGen) {
+                RingLog.log("gw", "connecting (gen=$myGen)")
                 state = "connecting"
                 val c = RelayTunnelClient(relayHost, deviceId, password) { s -> state = s }
                 client = c
@@ -38,22 +43,21 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
                 } catch (t: InterruptedException) {
                     false
                 }
-                if (opened && !stopped) {
+                if (opened && !stopped && generation == myGen) {
                     state = "online"
                     RingLog.log("gw", "online")
                     backoff = 2
-                    // 连接保持期间在此等待（onClose 由库回调）
-                    while (!stopped && c.isOpen) {
+                    while (!stopped && generation == myGen && c.isOpen) {
                         try {
                             Thread.sleep(500)
                         } catch (_: InterruptedException) {
                             break
                         }
                     }
-                    if (!stopped) RingLog.log("gw", "connection lost (isOpen=false)")
+                    if (generation == myGen) RingLog.log("gw", "connection lost (isOpen=false)")
                 }
                 try { c.shutdown() } catch (_: Exception) {}
-                if (stopped) break
+                if (stopped || generation != myGen) break
                 state = "retrying"
                 RingLog.log("gw", "retry in ${backoff}s")
                 try {
@@ -63,7 +67,7 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
                 }
                 backoff = (backoff * 2).coerceAtMost(30)
             }
-            RingLog.log("gw", "loop exited")
+            RingLog.log("gw", "loop exited (gen=$myGen)")
         }
         loopThread = t
         t.start()
@@ -89,7 +93,15 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
     @Synchronized
     private fun stopTunnel() {
         stopped = true
+        generation += 1 // 唤醒/终止所有旧循环
+        loopThread?.interrupt()
+        loopThread = null
         try { client?.shutdown() } catch (_: Throwable) {}
         client = null
+    }
+
+    companion object {
+        /** 循环代际：每次 start/stop 递增，旧代循环自行退出 */
+        @Volatile private var generation = 0
     }
 }
