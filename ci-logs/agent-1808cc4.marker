@@ -1,0 +1,10 @@
+job: agent | conclusion: success | sha: 1808cc4
+--- staging dir ---
+total 20
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:22 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:20 ..
+-rw-r--r--  1 runner runner   68 Sep  1 08:22 agent-1808cc4.marker
+-rw-r--r--  1 runner runner    0 Sep  1 08:21 agent-build.log
+-rw-r--r--  1 runner runner   52 Sep  1 08:21 agent-mod.log
+-rw-r--r--  1 runner runner   26 Sep  1 08:21 agent-test.log
+-rw-r--r--  1 runner runner    0 Sep  1 08:21 agent-vet.log
