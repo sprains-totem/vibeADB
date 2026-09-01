@@ -27,10 +27,10 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
             return false
         }
         RingLog.log("gw", "start requested (relay=$relayHost)")
-        generation += 1 // 使任何旧循环立即失效
-        val myGen = generation
-        stopTunnel()
+        stopTunnel() // 先终止旧循环（内部会递增 generation）
         stopped = false
+        generation += 1 // 为本次 start 分配新代际（必须在 stopTunnel 之后）
+        val myGen = generation
         val t = Thread {
             var backoff = 2L
             while (!stopped && generation == myGen) {
