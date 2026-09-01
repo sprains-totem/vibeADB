@@ -1,0 +1,10 @@
+job: relay-release | conclusion: success | tag: v2.0.0
+--- staging dir ---
+total 28
+drwxr-xr-x  2 runner runner 4096 Sep  1 09:20 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 09:20 ..
+-rw-r--r--  1 runner runner  735 Sep  1 09:20 relay-release-build.log
+-rw-r--r--  1 runner runner  518 Sep  1 09:20 relay-release-install.log
+-rw-r--r--  1 runner runner   25 Sep  1 09:20 relay-release-progress.log
+-rw-r--r--  1 runner runner  521 Sep  1 09:20 relay-release-test.log
+-rw-r--r--  1 runner runner   75 Sep  1 09:20 relay-release-v2.0.0.marker
