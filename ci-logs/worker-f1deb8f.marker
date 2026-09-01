@@ -1,0 +1,9 @@
+job: worker | conclusion: success | sha: f1deb8f
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:17 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:17 ..
+-rw-r--r--  1 runner runner  757 Sep  1 08:17 worker-build.log
+-rw-r--r--  1 runner runner   69 Sep  1 08:17 worker-f1deb8f.marker
+-rw-r--r--  1 runner runner  518 Sep  1 08:17 worker-install.log
+-rw-r--r--  1 runner runner  529 Sep  1 08:17 worker-test.log
