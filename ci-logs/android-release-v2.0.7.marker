@@ -1,0 +1,16 @@
+job: android-release | conclusion: success | tag: v2.0.7
+--- progress ---
+23:31:23 job start
+23:31:49 keystore ready
+23:32:24 unit tests done
+23:32:59 assemble done
+23:32:59 apk renamed
+23:33:01 release attach attempted
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 23:33 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 23:32 ..
+-rw-r--r--  1 runner runner 2580 Sep  1 23:32 android-release-build.log
+-rw-r--r--  1 runner runner  146 Sep  1 23:33 android-release-progress.log
+-rw-r--r--  1 runner runner 1601 Sep  1 23:32 android-release-test.log
+-rw-r--r--  1 runner runner  240 Sep  1 23:33 android-release-v2.0.7.marker
