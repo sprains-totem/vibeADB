@@ -1,57 +1,51 @@
-# vibeADB 架构设计（v2.1）
+# vibeADB 架构设计（v3 · 边缘中继版）
 
-> 定位：个人开发者让**远程** AI Agent 对真机执行**短时** ADB 级测试操作（装/卸应用、启动 Activity、注入输入、截图、取 UI 层级、抓日志）。手机无需公网 IP；免 root（Shizuku/adb 启动，Sui 路径支持 root）。
+> 定位：个人开发者让 **AI Agent** 对真机/模拟器执行**短时** ADB 级测试操作（装/卸应用、启动 Activity、注入输入、截图、取 UI 层级、抓日志）。免 root（Shizuku/adb 启动，Sui 路径支持 root）。
 >
-> v2.1 变更：补一个 ~50 行的"URL 信箱"Worker，解决**多轮启动**下 URL 反复传递的问题——配对串只需粘贴一次，长期有效。
+> v3（即 v2 实现）核心变更：**Durable Object 边缘中继 + Android 出站 WebSocket + 原生 MCP**。剔除 cloudflared JNI 依赖（通吃真机与 x86 模拟器），剔除 URL 信箱（中继域名恒定），Agent 侧改为 MCP 工具直调。
 
 ## 0. 设计原则
 
-1. **会话制**：开始会话 → 干活 → 结束。不做保活、断线自愈、开机自启。
-2. **发现最小化**：控制面只有一个"URL 信箱"：手机会话启动时投递一次 URL，Agent 每轮连接前取一次。事件驱动、无心跳、无限流、不碰密码。
-3. **安全只留必要的**：网关握手密码 + 只绑 127.0.0.1 + 信箱写保护。
+1. **会话制**：开始会话 → 干活 → 结束。出站连接自带重连退避，不做保活、开机自启。
+2. **出站即通**：手机**主动连出**到边缘中继（NAT 友好，无需任何入站隧道/公网 IP）；中继域名恒定 → 无 URL 轮换 → 无信箱无心跳。
+3. **边缘最小信任**：DO 是透明配对管道；密码端到端由手机校验，边缘不接触秘密与业务内容。
+4. **Agent 原生化**：MCP 工具直调真机能力，模型无需拼命令行。
 
 ## 1. 总体架构
 
 ```
- AI Agent (远程机器)
-   │  ① 配对串 vibeadb://<worker-host>/<deviceId>#<password>
-   │     （只粘贴一次，存进 Agent 配置，长期有效）
-   │
-   │  ② GET /devices/<deviceId> ──► Worker「URL 信箱」◄── ④ PUT URL（会话启动/URL 变化时）
-   │  ③ 返回当前 tunnel-host             │ KV: deviceId → domain
-   ▼                                    └─ Worker 不经手测试流量，接触不到密码
- trycloudflare.com (quick tunnel)
-   │  ⑤ WSS 直连（数据面：命令 + 截图/APK 等大流量全走这里）
+ AI Agent（Claude Code / Cursor / 任何 MCP 客户端）
+   │  MCP 工具调用（screenshot / tap / install_apk / shell / …）
    ▼
- Android 手机
-   ├─ cloudflared（App 内嵌，仅会话期间运行）
-   └─ UserService 网关（Shizuku shell/root 身份，只绑 127.0.0.1）
+ vibeADB MCP 服务器（本机 node 进程，stdio）
+   │  ② WSS client 腿：wss://<relay>/connect?deviceId=X
+   ▼
+ Cloudflare Durable Object「边缘中继」（恒定域名，每 deviceId 一实例）
+   ▲  透明转发帧（文本/二进制），不接触密码
+   │  ③ WSS device 腿：wss://<relay>/device（App 出站连接，断线自动重连）
+ Android 手机 / 模拟器
+   └─ App：Shizuku UserService 网关（shell/root UID）→ 执行 JSON-RPC 命令
 ```
 
-多轮启动流程（无需人工介入）：
-
-1. 手机点「开始会话」→ 拉起网关 + cloudflared → 拿到 tunnel URL → `PUT` 进信箱。
-2. Agent 每次连接前 `GET` 当前 URL → 连接 → 握手验密码 → 干活。
-3. 会话断开、手机重开会话 → 新 URL 已自动 `PUT`；Agent 连接失败后自动重 `GET`（短退避几次）→ 拿新 URL 重连。
-4. 信箱无记录（404）= 手机端会话未运行 → Agent 明确报"请在手机上开始会话"。
-
-单轮/无 Worker 场景：配对串也可直接填 `<tunnel-host>#<password>`（跳过信箱，一次性使用）。
+- 配对串 `vibeadb://<relay-host>/<deviceId>#<password>` **一次配置永久有效**。
+- 会话 = App 内点「开始会话」（建立出站连接）；停止 = 断开出站连接。
+- 无 cloudflared、无 jniLibs、无 URL 信箱、无心跳。
 
 ## 2. 组件职责
 
 | 组件 | 职责 | 关键点 |
 |---|---|---|
-| Android App | 会话启停、Shizuku 授权引导、cloudflared 管理、URL 投递、配对串展示/复制 | 前台服务仅存活于会话期间 |
-| UserService 网关 | `127.0.0.1:<port>` WebSocket 服务：握手鉴权 + JSON-RPC 命令执行 | 以 shell/root UID 运行，是"ADB 能力"的真正实现者 |
-| Worker（URL 信箱） | `PUT /devices/<id>`（写，验令牌）+ `GET /devices/<id>`（读） | ~50 行；只存 `{domain}`；TTL 惰性过期 |
-| Agent CLI | resolve → 连接 → 鉴权 → 执行；失败自动重 resolve（有限退避） | 重试耗尽仍失败才报错 |
+| Android App | 会话启停、Shizuku 授权引导、**出站** WS 客户端（自动重连退避）、配对串展示 | 前台服务仅存活于会话期间；纯原生 Java WebSocket，通吃真机与模拟器 |
+| UserService 网关 | 持有出站连接 + 端到端鉴权 + JSON-RPC 命令执行 | 以 shell/root UID 运行；Dispatcher 与 v1 相同（传输无关） |
+| 边缘中继（DO） | 按 deviceId 配对两条腿，透明转发帧；latest-wins 防占坑 | ~100 行 TS；Hibernation API；不存储不解析 |
+| MCP 服务器 | 把真机能力暴露为 MCP 工具；截图直接返回图片给模型 | stdio 传输；每工具独立建连 |
 
 ## 3. Shizuku 关键判定（沿用 v1 调研结论）
 
-- **Shizuku ≠ adbd**。"接入 ADB"的落地形式是：**以 adb（shell）身份执行操作**，而不是跑真 adbd 协议（无 RSA 认证、无 ADB 传输协议、无交互 tty）。
-- 免 root（Shizuku/adb 启动）时身份为 **UID 2000 / `u:r:shell:s0`**，能力 ≈ 非 root 的 `adb shell`；Sui（Magisk）时 UID 0。
-- 网关实现位置首选 **UserService**（官方推荐形态）：独立进程、shell/root 身份、无 non-SDK 限制、可开 ServerSocket。`newProcess` 已废弃（API 14 移除）、无 tty、随调用方死亡。
-- UserService 进程不是合法 Android app 进程：`Context#registerReceiver`、`getContentResolver` 等不可用；需实现 `destroy`（transaction `16777115`）清理并 `System.exit()`。
+- **Shizuku ≠ adbd**：以 adb（shell）身份执行操作，非真 adbd 协议。
+- 免 root 身份 **UID 2000 / `u:r:shell:s0`**；Sui（Magisk）时 UID 0。
+- UserService 首选：独立进程、无 non-SDK 限制、可开网络连接；`destroy`（transaction `16777115`）清理并 `System.exit()`。
+- UserService 进程限制：`registerReceiver`、`getContentResolver` 等不可用。
 
 ## 4. 能力边界
 
@@ -59,63 +53,51 @@
 
 | 类别 | 命令 |
 |---|---|
-| 包管理 | `pm install / uninstall / list / grant`（install 安装者为 `com.android.shell`；APK 经 WS 上传，`pm install -S <size>` stdin 流式安装） |
+| 包管理 | `pm install / uninstall / list / grant`（APK 经 WS 分块上传，`pm install -S` 流式安装） |
 | 应用控制 | `am start / stop / force-stop / broadcast` |
 | 输入注入 | `input tap / swipe / text / keyevent` |
-| 截图 | `screencap`（安全窗口 FLAG_SECURE 会黑屏，需容忍） |
-| UI 层级 | `uiautomator dump`（AI 测试核心） |
-| 日志 | `logcat`（流式订阅） |
+| 截图 | `screencap`（FLAG_SECURE 安全窗口黑屏，需容忍） |
+| UI 层级 | `uiautomator dump` |
+| 日志 | `logcat`（流式订阅 / MCP 侧 tail） |
 | 状态 | `settings / dumpsys / getprop` |
-| 随机测试 | `monkey` |
-| 通用 | `shell`（任意命令，覆盖上表未列场景） |
+| 通用 | `shell`（任意命令） |
 
-**不支持 / 明确不承诺：**
+**不支持 / 不承诺：** 真 adbd、scrcpy 视频流、交互式 tty、root-only 操作、程序化开启无线调试。命令可用性受 Android 版本 / OEM / SELinux 影响 → 测试矩阵（见 ROADMAP 风险表）。
 
-- 真 adbd / 原生 `adb` CLI 兼容、scrcpy 式视频流（需自实现）、交互式 tty shell
-- 免 root 下的 root-only 操作（读其他 app 私有数据等）
-- 程序化开启"无线调试"、保持 adbd 存活（无相关 API）
-- 具体命令可用性受 Android 版本 / OEM / SELinux 影响 → 需要测试矩阵（见 ROADMAP 风险表）
+## 5. 安全模型（两条 + 一条信任备注）
 
-## 5. URL 信箱（唯一控制面，~50 行）
+1. **端到端握手鉴权**：client 的 auth 帧经中继**原样转发**，由手机校验密码（≥32 字符高熵，App 生成，仅存手机与 Agent 侧）。**边缘中继永远接触不到密码**。域名+deviceId 泄露 ≠ 可连接。
+2. **出站连接**：手机只出不进，无需公网 IP；无本地监听端口（除进程内）。
+3. **信任备注**：中继与隧道（Cloudflare）可见"有加密流量在流动"但不可见内容与密码；deviceId 泄露最坏后果 = device 腿被占坑（DoS，latest-wins 可被真机顶替）+ 截获 client auth 帧（密码）。deviceId 勿外传。
 
-KV Schema：
+**明确不做**：边缘限流、边缘存储、密码哈希/轮换、审计、CF Access。理由：短会话 + 高熵密码 + 端到端鉴权下，边缘无秘密可保护。
 
-```
-devices:<deviceId> → { domain: string }   // 每次写时 expirationTtl=24h，惰性过期
-```
+## 6. 免费额度
 
-- **写**：`PUT /devices/<deviceId>`，header `Authorization: Bearer <写令牌>`（Worker env 单一共享 secret，App 设置里填一次），body `{"domain": ...}`。触发时机：会话启动、cloudflared 重启导致 URL 变化（事件驱动，**无定时心跳**）。
-- **读**：`GET /devices/<deviceId>`（deviceId 为 128 位随机数，即地址也是读取凭证，不可枚举）→ `{domain}`；无记录 404。
-- **额度核算**：每次会话启动 ≈ 1 次 KV 写。即使每天重开 100 次会话也远低于免费版 1000 writes/day（v1 的 1min 心跳 = 1440 writes/day 是其死因）。
-- **明确不做**：心跳、新鲜度判定、限流、密码哈希、多设备列表接口、cron 清理。过期记录要么被下次会话覆盖，要么 24h 后自然消失，残留无害。
-- KV 为最终一致（跨站点传播最长 ~60s）：刚 `PUT` 完就 `GET` 可能拿到旧值——Agent 的失败重查退避覆盖此场景即可，不做额外设计。
+- Workers/DO 免费档（SQLite DO）：~100k requests/day，每条 WS 消息计 1 request。个人短时测试远低于限额。
+- 无 KV、无 secret、无 cron——部署即 `wrangler deploy` 一条命令。
 
-## 6. 安全模型（不可裁剪项）
-
-1. **网关握手鉴权**：握手必须校验密码，失败即断开。密码 ≥32 字符高熵，由 App 生成，仅存在于手机与 Agent 侧；**Worker 永远接触不到密码**（v1 的 resolve 反而把密码发给了 Worker）。**域名泄露 ≠ 可连接。**
-2. **只绑 `127.0.0.1`**：网关仅经隧道可达；会话空闲超时自动断开。
-3. **信箱写保护**：`PUT` 验共享写令牌。若不做，deviceId 泄露者可抢注域名——Agent 会连到攻击者网关并交出密码，这是本设计唯一的注入面，3 行代码封掉。
-
-**信任边界备注**：隧道 TLS 在 Cloudflare 边缘终结，截图/命令内容对 CF 技术上可见（个人测试用途可接受）；Worker 只见 URL、不见流量与密码。deviceId 与写令牌均只存手机本地。
-
-**明确不做**：限流、密码哈希/轮换、审计日志、CF Access Service Token。
-
-## 7. 配对串
-
-```
-vibeadb://<worker-host>/<deviceId>#<password>   # 常规：永久有效，多轮启动免人工
-vibeadb://<tunnel-host>#<password>              # 直连：单轮一次性（无 Worker 时）
-```
-
-App 一键复制；Agent 端存入配置文件（多设备 = 多条记录）。
-
-## 8. 仓库结构
+## 7. 仓库结构
 
 ```
 vibeADB/
-├── android/     # Kotlin app：会话 UI + Shizuku 授权引导 + cloudflared 管理
-│   └── gateway/ # UserService：WebSocket 网关（命令面实现）
-├── protocol/    # JSON-RPC 方法、二进制帧格式、配对串、信箱 API（两端共享）
-├── worker/      # URL 信箱（~50 行）
-└── agent/       # CLI（Go）+ MCP server（TypeScript，可选）
+├── android/     # Kotlin app：会话 UI + Shizuku 授权引导 + 出站中继客户端
+│   └── gateway/ # UserService：Dispatcher（命令面实现，传输无关）
+├── relay/       # Durable Object 边缘中继（~100 行 TS）
+├── mcp/         # MCP 服务器（原生工具层）
+├── protocol/    # 三端共享协议契约（PROTOCOL.md v2）
+└── docs/        # 架构 / 路线图
 ```
+
+## 8. 与 v1 的对比（为什么改）
+
+| 维度 | v1（quick tunnel + 信箱） | v3（DO 中继 + MCP） |
+|---|---|---|
+| 入站方式 | cloudflared 入站隧道（JNI/asset 二进制 ~30MB） | 出站 WebSocket（纯原生，0 依赖） |
+| 模拟器支持 | ✗（仅 arm64 真机） | ✓（任何能跑 App 的设备） |
+| Agent 接入 | Go CLI 拼命令行 | MCP 原生工具，截图直接进模型上下文 |
+| URL 稳定性 | 随机域名+轮换 → 需要信箱 | 恒定域名 → 无信箱无心跳 |
+| 部署件 | Worker+KV+secret | 单 Worker+DO，一条命令 |
+| 边缘信任 | Worker 存域名（无密码） | DO 透传（无任何存储） |
+
+v1 完整实现保留在 `v1` 分支。

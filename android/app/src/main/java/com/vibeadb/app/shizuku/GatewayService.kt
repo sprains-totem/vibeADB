@@ -2,41 +2,78 @@ package com.vibeadb.app.shizuku
 
 import android.content.Context
 import android.os.Process
-import com.vibeadb.app.gateway.GatewayWsServer
+import com.vibeadb.app.gateway.RelayTunnelClient
 
 /**
  * Shizuku UserService：以 shell/root UID 在独立进程运行。
- * 生命周期：App bindUserService → start(password, port) → unbindUserService 触发 destroy → System.exit。
+ * v2：进程内维护到边缘中继的出站 WebSocket（自动重连），不再有本地 WS server 与 cloudflared。
  */
 class GatewayService(private val context: Context?) : IGatewayService.Stub() {
 
-    private var server: GatewayWsServer? = null
+    private var loopThread: Thread? = null
+    private var client: RelayTunnelClient? = null
 
-    override fun start(password: String?, port: Int): Boolean {
-        if (password.isNullOrEmpty() || port !in 1024..65535) return false
-        shutdownServer()
-        return try {
-            val s = GatewayWsServer("127.0.0.1", port, password)
-            s.isReuseAddr = true
-            s.start()
-            server = s
-            true
-        } catch (t: Throwable) {
-            false
+    @Volatile private var stopped = false
+
+    @Volatile private var state = "idle"
+
+    override fun start(password: String?, relayHost: String?, deviceId: String?): Boolean {
+        if (password.isNullOrEmpty() || relayHost.isNullOrEmpty() || deviceId.isNullOrEmpty()) {
+            return false
         }
+        stopTunnel()
+        stopped = false
+        val t = Thread {
+            var backoff = 2L
+            while (!stopped) {
+                val c = RelayTunnelClient(relayHost, deviceId, password) { s -> state = s }
+                client = c
+                state = "connecting"
+                val opened = try {
+                    c.connectBlocking(15, java.util.concurrent.TimeUnit.SECONDS)
+                } catch (t: InterruptedException) {
+                    false
+                }
+                if (opened && !stopped) {
+                    state = "online"
+                    backoff = 2
+                    // 连接保持期间在此等待（onClose 由库回调）
+                    while (!stopped && c.isOpen) {
+                        try {
+                            Thread.sleep(500)
+                        } catch (_: InterruptedException) {
+                            break
+                        }
+                    }
+                }
+                try { c.shutdown() } catch (_: Exception) {}
+                if (stopped) break
+                state = "retrying"
+                try {
+                    Thread.sleep(backoff * 1000)
+                } catch (_: InterruptedException) {
+                    break
+                }
+                backoff = (backoff * 2).coerceAtMost(30)
+            }
+        }
+        loopThread = t
+        t.start()
+        return true
     }
 
-    override fun status(): String = if (server != null) "running" else "idle"
+    override fun status(): String = state
 
     override fun destroy() {
-        shutdownServer()
+        stopTunnel()
         Process.killProcess(Process.myPid())
         System.exit(0)
     }
 
     @Synchronized
-    private fun shutdownServer() {
-        try { server?.shutdown() } catch (_: Throwable) {}
-        server = null
+    private fun stopTunnel() {
+        stopped = true
+        try { client?.shutdown() } catch (_: Throwable) {}
+        client = null
     }
 }

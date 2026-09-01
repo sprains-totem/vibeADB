@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.vibeadb.app.core.Pairing
 import com.vibeadb.app.core.Prefs
 import rikka.shizuku.Shizuku
 
@@ -147,7 +148,7 @@ class MainActivity : ComponentActivity() {
                 when (state) {
                     is SessionUiState.Idle, is SessionUiState.Stopped -> {
                         if (state is SessionUiState.Stopped) Text(state.message)
-                        Text("未运行。开始会话后把配对串发给 Agent 即可。")
+                        Text("未运行。开始会话后把配对串发给 MCP 服务器即可（永久有效）。")
                         Button(onClick = onStart) { Text("开始会话") }
                     }
                     is SessionUiState.Starting -> {
@@ -161,14 +162,8 @@ class MainActivity : ComponentActivity() {
                         OutlinedButton(onClick = onStop) { Text("停止") }
                     }
                     is SessionUiState.Running -> {
-                        Text("隧道: ${state.tunnelHost}")
-                        Text(
-                            when {
-                                state.mailboxOk == true -> "已投递到信箱（Agent 用配对串即可连）"
-                                state.mailboxOk == false -> "信箱投递失败（检查 Worker 地址/令牌）"
-                                else -> "未配置信箱（直连模式，URL 变化需重新复制）"
-                            }
-                        )
+                        Text("中继: ${state.relayHost} · ${if (state.online) "已连接" else "连接中"}")
+                        Text("Agent 可随时通过配对串连接（支持断线自动重连）。")
                         Text("配对串:", fontWeight = FontWeight.Bold)
                         Text(state.pairing, style = MaterialTheme.typography.bodySmall)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -190,9 +185,13 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun SettingsCard(prefs: Prefs) {
         val ctx = LocalContext.current
-        var host by remember { mutableStateOf(prefs.workerHost) }
-        var token by remember { mutableStateOf(prefs.workerToken) }
+        var host by remember { mutableStateOf(prefs.relayHost) }
         var pw by remember { mutableStateOf(prefs.password) }
+        val pairing = Pairing.worker(
+            prefs.relayHost.ifBlank { "<relay-host>" },
+            prefs.deviceId,
+            prefs.password
+        )
 
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -200,38 +199,34 @@ class MainActivity : ComponentActivity() {
                 OutlinedTextField(
                     value = host,
                     onValueChange = { host = it },
-                    label = { Text("Worker 地址（如 vibeadb-mailbox.xxx.workers.dev）") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it },
-                    label = { Text("写令牌（Worker 的 WRITE_TOKEN）") },
+                    label = { Text("边缘中继地址（如 vibeadb-relay.xxx.workers.dev）") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
                 Button(onClick = {
-                    prefs.workerHost = host.trim().removePrefix("https://").removeSuffix("/")
-                    prefs.workerToken = token.trim()
-                    host = prefs.workerHost
+                    prefs.relayHost = host.trim().removePrefix("https://").removeSuffix("/")
+                    host = prefs.relayHost
                     Toast.makeText(ctx, "已保存", Toast.LENGTH_SHORT).show()
-                }) { Text("保存 Worker 配置") }
+                }) { Text("保存中继配置") }
 
-                Text("设备 ID: ${prefs.deviceId}", style = MaterialTheme.typography.bodySmall)
-                Text("密码: $pw", style = MaterialTheme.typography.bodySmall)
+                Text("配对串（永久有效）:", fontWeight = FontWeight.Bold)
+                Text(pairing, style = MaterialTheme.typography.bodySmall)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { copyText(ctx, "pairing", pairing) }) {
+                        Text("复制配对串")
+                    }
                     OutlinedButton(onClick = { copyText(ctx, "deviceId", prefs.deviceId) }) {
                         Text("复制 ID")
                     }
-                    OutlinedButton(onClick = { copyText(ctx, "password", prefs.password) }) {
-                        Text("复制密码")
-                    }
                     OutlinedButton(onClick = {
                         pw = prefs.resetPassword()
-                        Toast.makeText(ctx, "密码已重置", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(ctx, "密码已重置（记得更新 Agent 侧配对串）", Toast.LENGTH_LONG).show()
                     }) { Text("重置密码") }
                 }
+                Text(
+                    "密码: $pw",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }

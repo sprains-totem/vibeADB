@@ -17,7 +17,7 @@ object GatewayConnection : ServiceConnection {
     private var args: Shizuku.UserServiceArgs? = null
 
     @Synchronized
-    fun ensureStarted(context: Context, password: String, port: Int): Boolean {
+    fun ensureStarted(context: Context, password: String, relayHost: String, deviceId: String): Boolean {
         if (!Shizuku.pingBinder()) {
             throw IllegalStateException("Shizuku 未运行")
         }
@@ -28,7 +28,7 @@ object GatewayConnection : ServiceConnection {
         latch = CountDownLatch(1)
         val a = Shizuku.UserServiceArgs(ComponentName(context, GatewayService::class.java))
             .processNameSuffix("gateway")
-            .version(1)
+            .version(2)
             .tag("vibeadb")
         args = a
         Shizuku.bindUserService(a, this)
@@ -36,7 +36,7 @@ object GatewayConnection : ServiceConnection {
             throw IllegalStateException("网关绑定超时")
         }
         val b = binder ?: throw IllegalStateException("网关绑定失败")
-        return b.start(password, port)
+        return b.start(password, relayHost, deviceId)
     }
 
     @Synchronized
@@ -45,6 +45,9 @@ object GatewayConnection : ServiceConnection {
         args = null
         binder = null
     }
+
+    /** 网关连接状态（"idle"/"connecting"/"online"/"retrying"），未绑定返回 null */
+    fun currentStatus(): String? = binder?.status()
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         binder = IGatewayService.Stub.asInterface(service)

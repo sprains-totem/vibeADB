@@ -13,15 +13,11 @@ app/src/main/jniLibs/
 *.iml
 .vscode/
 
-# Node / Worker
+# Node
 node_modules/
 dist/
 .wrangler/
 .dev.vars
-
-# Go
-agent/vibeadb
-agent/dist/
 
 # Misc
 *.log

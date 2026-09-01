@@ -1,58 +1,46 @@
 # vibeADB
 
-让远程 AI Agent 通过公网 HTTPS 对真机执行 ADB 级测试操作（装/卸应用、启动 Activity、注入输入、截图、取 UI 层级、抓日志）。手机无需公网 IP，免 root（Shizuku），**会话制短时使用**，无保活设计。
+AI Agent 通过**原生 MCP 工具**对真机/模拟器执行 ADB 级测试操作（装/卸应用、启动 Activity、注入输入、截屏、UI 层级、日志）。免 root（Shizuku），**边缘中继架构**：手机出站 WebSocket 连恒定域名，无需公网 IP、无需 cloudflared、无 URL 轮换。
 
-设计文档：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 路线图：[docs/ROADMAP.md](docs/ROADMAP.md) · 协议：[protocol/PROTOCOL.md](protocol/PROTOCOL.md)
+架构：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · 协议：[protocol/PROTOCOL.md](protocol/PROTOCOL.md) · v1（quick tunnel 版）在 `v1` 分支
 
 ## 组件
 
 | 目录 | 内容 |
 |---|---|
-| `android/` | Kotlin + Compose App：会话启停、Shizuku UserService 网关（WS + JSON-RPC）、内嵌 cloudflared、信箱投递 |
-| `worker/` | URL 信箱（~50 行 TS）：`deviceId → 当前隧道域名`，事件驱动写，无心跳 |
-| `agent/` | Go CLI：解析配对串 → 信箱解析 → WSS 连接 → shell/screenshot/ui/tap/install/logcat |
-| `protocol/` | 三端共享协议契约（M0 冻结） |
+| `android/` | Kotlin+Compose App：出站连中继的 Shizuku UserService 网关（纯原生 WebSocket，通吃真机与模拟器） |
+| `relay/` | Cloudflare Durable Object 边缘中继（~100 行）：按 deviceId 配对两腿，透明转发，不接触密码 |
+| `mcp/` | MCP 服务器：`screenshot / tap / install_apk / shell / ui_dump / logcat_tail / …` 工具直调 |
+| `protocol/` | 三端共享协议契约 |
 
-## 使用流程
+## 三步上手
 
-1. **部署 Worker**（一次性）：见 [worker/DEPLOY.md](worker/DEPLOY.md)，得到 Worker 地址 + 自己设置 `WRITE_TOKEN`。
-2. **装 App**：从 GitHub Release 下载 `vibeadb-*-release.apk` 安装；设置里填 Worker 地址与写令牌。
-3. **开始会话**：手机上安装并启动 [Shizuku](https://shizuku.rikka.app/)（无线调试或 root 方式）→ App 点「开始会话」→ 点「复制配对串」发给 Agent。
-4. **Agent 侧**：
-   ```bash
-   export VIBEADB_PAIRING='vibeadb://<worker-host>/<deviceId>#<password>'
-   vibeadb ping
-   vibeadb screenshot
-   vibeadb tap 500 1200
-   vibeadb install app-debug.apk
-   vibeadb shell 'dumpsys battery'
+1. **部署中继**（一次性）：`cd relay && npm i && npx wrangler deploy` → 得恒定域名（详见 [relay/DEPLOY.md](relay/DEPLOY.md)）。
+2. **手机**：装 Release 里的 APK → 装 [Shizuku](https://shizuku.rikka.app/) 并启动 → 设置页填中继地址 → 开始会话 → 复制配对串（永久有效）。
+3. **Agent**（Claude Code 示例）：
+   ```json
+   { "mcpServers": { "vibeadb": {
+       "command": "node",
+       "args": ["/path/vibeadb-mcp/dist/index.js"],
+       "env": { "VIBEADB_PAIRING": "vibeadb://<relay-host>/<deviceId>#<password>" }
+   } } }
    ```
-   手机重开会话后 Agent 自动重连（信箱解析新 URL），无需重新发配对串。
+   然后直接对话式测试：`install_apk` → `am_start` → `screenshot`（模型直接看到截图）→ `ui_dump` 找坐标 → `tap` → `logcat_tail`。手机断线重连自动恢复，无需重新配对。
 
 ## CI / Release
 
-- `ci.yml`：push/PR 触发——Worker vitest 测试、Go 测试、Android JVM 单测 + release APK 构建（临时签名）。
-- `release.yml`：push tag `v*` 触发——产出 GitHub Release：**release APK**（签名见下）、**worker file**（`vibeadb-worker-*.zip`，含构建产物与部署说明）、多平台 Agent 二进制。
-- 全部编译/测试在 Actions 上执行，本地无需任何构建环境。
+- `ci.yml`：relay/mcp 的 vitest、android JVM 单测 + assembleRelease，全部跑在 Actions。
+- `release.yml`：tag `v*` → Release 产出 **APK**、**relay zip**、**mcp zip**。
+- 可选 Secrets：`ANDROID_KEYSTORE_B64` / `ANDROID_STORE_PASSWORD` / `ANDROID_KEY_PASSWORD` / `ANDROID_KEY_ALIAS`（保证签名一致；缺省时 CI 生成并上传 keystore artifact）。
 
-可选 Secrets（release 签名一致性）：
+## 安全模型
 
-| Secret | 内容 |
-|---|---|
-| `ANDROID_KEYSTORE_B64` | base64 后的 keystore（`base64 -w0 release.keystore`） |
-| `ANDROID_STORE_PASSWORD` / `ANDROID_KEY_PASSWORD` / `ANDROID_KEY_ALIAS` | 对应凭证 |
-
-未配置时使用 CI 临时生成的 keystore（每次 tag 签名不同，覆盖安装需先卸载；生成的 keystore 会作为 artifact 上传，可保存后配置为 Secret）。
-
-## 安全模型（两条）
-
-1. 网关握手验密码（32 字符高熵，App 生成，仅存手机与 Agent 侧，**信箱永不接触密码**）。
-2. 网关只绑 `127.0.0.1`，仅经隧道可达；会话空闲 5 分钟自动断开。
-
-详细取舍见 ARCHITECTURE §5-§6。注意：隧道流量经 Cloudflare 边缘（TLS 终结），个人测试用途可接受。
+- 密码端到端：client 的 auth 帧经中继**原样转发**，由手机校验；边缘不接触密码与业务内容。
+- 手机只出不进：无公网 IP、无本地监听；配对串 = 域名（公开可扫）+ deviceId（128 位随机，勿外传）+ 高熵密码。
+- 详情见 ARCHITECTURE §5；v1 的威胁模型讨论同样适用于本版。
 
 ## 已知限制
 
-- APK 仅打包 `arm64-v8a` 的 cloudflared（现代设备均覆盖）；x86 模拟器不支持。
-- `pm install` 以 shell 身份（安装者 `com.android.shell`）；部分 OEM/SELinux 下的命令差异需真机验证（见 ROADMAP 风险表）。
-- MCP server 为可选件，暂未实现（协议已冻结，随时可包一层）。
+- DO 免费档 ~100k requests/day（每条 WS 消息计 1 request）——个人测试用量远低于限额。
+- 同时 1 条 client 腿（多 Agent 并行见 ROADMAP Deferred）。
+- MCP 服务器与 APK 文件须在同一台机器上（`install_apk` 读本地路径）。

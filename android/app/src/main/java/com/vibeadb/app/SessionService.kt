@@ -13,20 +13,15 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.vibeadb.app.core.Pairing
 import com.vibeadb.app.core.Prefs
-import com.vibeadb.app.core.UrlParser
-import com.vibeadb.app.mailbox.MailboxClient
 import com.vibeadb.app.shizuku.GatewayConnection
-import java.io.File
 import kotlin.concurrent.thread
-import kotlin.random.Random
 
 /**
- * 会话前台服务：网关(Shizuku UserService) + cloudflared(quick tunnel) + 信箱投递。
- * 生命周期 = 会话生命周期：开始会话拉起，停止/空闲即结束，无保活与自恢复。
+ * 会话前台服务：Shizuku UserService 网关 + 到边缘中继的出站 WebSocket。
+ * 生命周期 = 会话生命周期；出站连接自带重连退避，不做开机自启/保活。
  */
 class SessionService : Service() {
 
-    private var cloudflared: Process? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
     @Volatile private var stopped = false
@@ -75,57 +70,29 @@ class SessionService : Service() {
     private fun runSession() {
         val prefs = Prefs(this)
         try {
-            val port = 20000 + Random.nextInt(20000)
-            val ok = GatewayConnection.ensureStarted(this, prefs.password, port)
+            if (prefs.relayHost.isBlank()) {
+                throw IllegalStateException("未配置边缘中继地址（设置页填写）")
+            }
+            val ok = GatewayConnection.ensureStarted(this, prefs.password, prefs.relayHost, prefs.deviceId)
             if (!ok) throw IllegalStateException("网关启动失败")
-            startCloudflared(prefs, port)
+            val pairing = Pairing.worker(prefs.relayHost, prefs.deviceId, prefs.password)
+            // 网关状态轮询（跨进程，AIDL）
+            while (!stopped) {
+                val st = GatewayConnection.currentStatus() ?: "idle"
+                SessionState.update(
+                    when (st) {
+                        "online" -> SessionUiState.Running(prefs.relayHost, pairing, true)
+                        "connecting", "retrying" ->
+                            SessionUiState.Starting("连接边缘中继（$st），断线自动重连…")
+                        else -> SessionUiState.Starting("等待网关…")
+                    }
+                )
+                Thread.sleep(2000)
+            }
         } catch (t: Throwable) {
             if (!stopped) {
                 SessionState.update(SessionUiState.Failed(t.message ?: t.javaClass.simpleName))
                 stopSessionInternal()
-            }
-        }
-    }
-
-    private fun startCloudflared(prefs: Prefs, port: Int) {
-        val bin = File(applicationInfo.nativeLibraryDir, "libcloudflared.so")
-        if (!bin.exists()) {
-            throw IllegalStateException("缺少 cloudflared（本 APK 仅打包 arm64-v8a）")
-        }
-        val p = ProcessBuilder(
-            bin.absolutePath, "tunnel", "--no-autoupdate", "--protocol", "http2",
-            "--url", "http://127.0.0.1:$port"
-        ).redirectErrorStream(true).start()
-        cloudflared = p
-        SessionState.update(SessionUiState.Starting("隧道连接中…"))
-        thread(name = "vibeadb-tunnel") {
-            var found = false
-            p.inputStream.bufferedReader().forEachLine { line ->
-                if (found || stopped) return@forEachLine
-                val host = UrlParser.findTunnelHost(line) ?: return@forEachLine
-                found = true
-                var mailboxOk: Boolean? = null
-                if (prefs.workerHost.isNotBlank() && prefs.workerToken.isNotBlank()) {
-                    mailboxOk = try {
-                        MailboxClient(prefs.workerHost, prefs.workerToken).put(prefs.deviceId, host)
-                    } catch (t: Throwable) {
-                        false
-                    }
-                }
-                val pairing = if (prefs.workerHost.isNotBlank()) {
-                    Pairing.worker(prefs.workerHost, prefs.deviceId, prefs.password)
-                } else {
-                    Pairing.direct(host, prefs.password)
-                }
-                SessionState.update(SessionUiState.Running(host, pairing, mailboxOk))
-            }
-            // cloudflared 进程退出（被杀/网络中断/异常）
-            if (!stopped) {
-                val cur = SessionState.state.value
-                if (cur is SessionUiState.Running || cur is SessionUiState.Starting) {
-                    SessionState.update(SessionUiState.Failed("隧道进程退出（重开会话即可）"))
-                    stopSessionInternal()
-                }
             }
         }
     }
@@ -138,8 +105,6 @@ class SessionService : Service() {
     private fun stopSessionInternal() {
         stopped = true
         sessionActive = false
-        try { cloudflared?.destroy() } catch (_: Throwable) {}
-        cloudflared = null
         try { GatewayConnection.stopSession(this) } catch (_: Throwable) {}
         try { wakeLock?.release() } catch (_: Throwable) {}
         wakeLock = null

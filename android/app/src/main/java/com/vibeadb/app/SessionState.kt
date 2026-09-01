@@ -8,9 +8,9 @@ sealed class SessionUiState {
     object Idle : SessionUiState()
     data class Starting(val message: String = "启动中…") : SessionUiState()
     data class Running(
-        val tunnelHost: String,
+        val relayHost: String,
         val pairing: String,
-        val mailboxOk: Boolean? = null,
+        val online: Boolean,
     ) : SessionUiState()
 
     data class Failed(val message: String) : SessionUiState()

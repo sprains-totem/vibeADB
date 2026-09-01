@@ -1,8 +1,8 @@
 {
-  "name": "vibeadb-mailbox",
-  "version": "0.1.0",
+  "name": "vibeadb-relay",
+  "version": "2.0.0",
   "private": true,
-  "description": "vibeADB URL mailbox (deviceId -> current tunnel domain)",
+  "description": "vibeADB Durable Object edge relay (device leg <-> client leg pairing pipe)",
   "scripts": {
     "test": "vitest run",
     "dev": "wrangler dev",

@@ -2,7 +2,7 @@ package com.vibeadb.app.core
 
 import android.content.Context
 
-/** 密码 / deviceId / Worker 配置的本地存储。密码不落任何服务器，只存本地。 */
+/** 密码 / deviceId / 中继地址的本地存储。密码不落任何服务器，只存本地。 */
 class Prefs(context: Context) {
     private val sp = context.getSharedPreferences("vibeadb", Context.MODE_PRIVATE)
 
@@ -16,13 +16,10 @@ class Prefs(context: Context) {
             sp.edit().putString(KEY_DEVICE_ID, it).apply()
         }
 
-    var workerHost: String
-        get() = sp.getString(KEY_WORKER_HOST, "") ?: ""
-        set(value) = sp.edit().putString(KEY_WORKER_HOST, value).apply()
-
-    var workerToken: String
-        get() = sp.getString(KEY_WORKER_TOKEN, "") ?: ""
-        set(value) = sp.edit().putString(KEY_WORKER_TOKEN, value).apply()
+    /** 边缘中继域名（恒定，如 vibeadb-relay.xxx.workers.dev） */
+    var relayHost: String
+        get() = sp.getString(KEY_RELAY_HOST, "") ?: ""
+        set(value) = sp.edit().putString(KEY_RELAY_HOST, value).apply()
 
     fun resetPassword(): String {
         val p = Password.generate()
@@ -33,7 +30,6 @@ class Prefs(context: Context) {
     companion object {
         private const val KEY_PASSWORD = "password"
         private const val KEY_DEVICE_ID = "deviceId"
-        private const val KEY_WORKER_HOST = "workerHost"
-        private const val KEY_WORKER_TOKEN = "workerToken"
+        private const val KEY_RELAY_HOST = "relayHost"
     }
 }
