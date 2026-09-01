@@ -1,0 +1,18 @@
+job: android-release | conclusion: success | tag: v0.1.0
+--- progress ---
+08:24:02 job start
+08:24:27 cloudflared done
+08:24:28 keystore ready (mode=generated)
+08:25:00 unit tests done
+08:25:36 assemble done
+08:25:36 apk renamed
+08:25:39 release attach attempted
+--- staging dir ---
+total 28
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:25 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:25 ..
+-rw-r--r--  1 runner runner 2560 Sep  1 08:25 android-release-build.log
+-rw-r--r--  1 runner runner  529 Sep  1 08:24 android-release-cloudflared.log
+-rw-r--r--  1 runner runner  189 Sep  1 08:25 android-release-progress.log
+-rw-r--r--  1 runner runner 1564 Sep  1 08:25 android-release-test.log
+-rw-r--r--  1 runner runner  283 Sep  1 08:25 android-release-v0.1.0.marker

@@ -1,0 +1,7 @@
+08:24:02 job start
+08:24:27 cloudflared done
+08:24:28 keystore ready (mode=generated)
+08:25:00 unit tests done
+08:25:36 assemble done
+08:25:36 apk renamed
+08:25:39 release attach attempted
