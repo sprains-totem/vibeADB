@@ -1,0 +1,14 @@
+job: android | conclusion: failure | sha: f1deb8f
+--- progress ---
+08:17:30 job start
+08:18:09 cloudflared done
+08:18:19 deps diag done
+--- staging dir ---
+total 28
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:18 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:17 ..
+-rw-r--r--  1 runner runner  529 Sep  1 08:18 android-cloudflared.log
+-rw-r--r--  1 runner runner  514 Sep  1 08:18 android-deps.log
+-rw-r--r--  1 runner runner  156 Sep  1 08:18 android-f1deb8f.marker
+-rw-r--r--  1 runner runner   69 Sep  1 08:18 android-progress.log
+-rw-r--r--  1 runner runner 2860 Sep  1 08:18 android-test.log

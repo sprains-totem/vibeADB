@@ -15,43 +15,19 @@ Daemon will be stopped at the end of the build
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
-> Task :app:processDebugManifestForPackage
-> Task :app:javaPreCompileDebug
 > Task :app:preDebugUnitTestBuild UP-TO-DATE
 > Task :app:javaPreCompileDebugUnitTest
+> Task :app:javaPreCompileDebug
+> Task :app:processDebugManifestForPackage
 > Task :app:processDebugResources
 
-> Task :app:compileDebugKotlin
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:43:8 Unresolved reference 'dev'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:53:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:53:53 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:53:56 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:57:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:62:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:92:13 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:248:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:249:10 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:250:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:8:8 Unresolved reference 'dev'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:17:23 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:21:14 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:24:13 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:29:17 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:34:9 Unresolved reference 'Shizuku'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:15 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:15 Unresolved reference. None of the following candidates is applicable because of a receiver type mismatch:
-fun <T, R> T.let(block: (T) -> R): R
-    [R|Contract description]
-     <
-        CallsInPlace(block, EXACTLY_ONCE)
-    >
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:19 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:21 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:33 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:44:35 Unresolved reference 'Shizuku'.
-
 > Task :app:compileDebugKotlin FAILED
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_4-1788217743620.json
+e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:57:52 Argument type mismatch: actual type is 'kotlin.Int', but 'rikka.shizuku.Shizuku.OnRequestPermissionResultListener' was expected.
+e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:57:58 Argument type mismatch: actual type is 'rikka.shizuku.Shizuku.OnRequestPermissionResultListener', but 'android.os.Handler?' was expected.
+e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:62:55 Argument type mismatch: actual type is 'kotlin.Int', but 'rikka.shizuku.Shizuku.OnRequestPermissionResultListener' was expected.
+e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:62:61 Too many arguments for 'static fun removeRequestPermissionResultListener(p0: Shizuku.OnRequestPermissionResultListener): Boolean'.
+e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:248:17 Unresolved reference 'getSuiVersion'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_4-1788250702232.json
 
 FAILURE: Build failed with an exception.
 
@@ -66,5 +42,5 @@ Execution failed for task ':app:compileDebugKotlin'.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
 
-BUILD FAILED in 22s
+BUILD FAILED in 16s
 17 actionable tasks: 17 executed
