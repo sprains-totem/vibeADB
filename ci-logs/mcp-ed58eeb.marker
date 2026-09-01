@@ -1,0 +1,9 @@
+job: mcp | conclusion: success | sha: ed58eeb
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 23:06 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 23:06 ..
+-rw-r--r--  1 runner runner   51 Sep  1 23:06 mcp-build.log
+-rw-r--r--  1 runner runner   66 Sep  1 23:06 mcp-ed58eeb.marker
+-rw-r--r--  1 runner runner  282 Sep  1 23:06 mcp-install.log
+-rw-r--r--  1 runner runner  520 Sep  1 23:06 mcp-test.log
