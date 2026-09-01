@@ -1,5 +1,6 @@
 package com.vibeadb.app.gateway
 
+import com.vibeadb.app.core.RingLog
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import org.json.JSONObject
@@ -9,10 +10,8 @@ import javax.net.ssl.SSLSocketFactory
 
 /**
  * v2 出站隧道：App（UserService 进程，shell/root UID）**主动连出**到边缘中继的 device 腿。
- * 不再需要 cloudflared / 入站隧道 / URL 信箱——中继域名恒定。
- *
  * 帧转发：client 腿（经 DO 透明管道）→ 这里 → Dispatcher 执行 → 结果帧原路返回。
- * auth 由本地校验（端到端，边缘不接触密码）。
+ * auth 由本地校验（端到端，边缘不接触密码）。所有连接事件进 RingLog。
  */
 class RelayTunnelClient(
     relayHost: String,
@@ -41,10 +40,12 @@ class RelayTunnelClient(
         // 30s WS ping 保活：防运营商 NAT/防火墙掐 60s 空闲长连接
         // （CF 边缘直接应答 pong，不唤醒 DO、不计请求额度）
         connectionLostTimeout = 30
+        RingLog.log("ws", "connect -> wss://$relayHost/device (deviceId=$deviceId)")
     }
 
     override fun onOpen(handshakedata: ServerHandshake?) {
         lastOpenInfo = "http=${handshakedata?.httpStatus} msg=${handshakedata?.httpStatusMessage}"
+        RingLog.log("ws", "OPEN $lastOpenInfo")
         onState("online")
         authed = false
     }
@@ -57,17 +58,23 @@ class RelayTunnelClient(
                 "auth" -> {
                     if (obj.optString("password") == password) {
                         authed = true
+                        RingLog.log("ws", "client auth OK")
                         send("""{"op":"auth","ok":true}""")
                     } else {
+                        RingLog.log("ws", "client auth FAILED (bad password)")
                         send("""{"op":"auth","ok":false,"error":"bad password"}""")
                         close(4001, "auth failed")
                     }
                 }
                 "edge" -> {
-                    // paired / client_gone / device_gone —— 状态由连接本身体现，忽略
+                    val ev = obj.optString("event")
+                    if (ev == "paired") RingLog.log("ws", "edge: client paired")
+                    if (ev == "client_gone") RingLog.log("ws", "edge: client gone")
+                    if (ev == "device_gone") RingLog.log("ws", "edge: device gone")
                 }
                 "" -> {
                     if (!authed) {
+                        RingLog.log("ws", "frame before auth -> close 4001")
                         close(4001, "unauthorized")
                         return
                     }
@@ -75,6 +82,7 @@ class RelayTunnelClient(
                 }
             }
         } catch (e: Exception) {
+            RingLog.log("ws", "bad frame: ${e.message}")
             try { send("""{"op":"protoError","error":"bad frame"}""") } catch (_: Exception) {}
         }
     }
@@ -93,13 +101,17 @@ class RelayTunnelClient(
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
         lastCloseInfo = "code=$code remote=$remote reason=${reason ?: "-"}"
+        RingLog.log("ws", "CLOSE $lastCloseInfo")
         dispatcher.cancel(this)
         authed = false
     }
 
-    override fun onError(ex: Exception?) {}
+    override fun onError(ex: Exception?) {
+        RingLog.log("ws", "ERROR: ${ex?.message ?: "-"}")
+    }
 
     fun shutdown() {
+        RingLog.log("ws", "shutdown requested")
         try { close() } catch (_: Exception) {}
     }
 

@@ -84,7 +84,9 @@ class SessionService : Service() {
             if (prefs.relayHost.isBlank()) {
                 throw IllegalStateException("未配置边缘中继地址（设置页填写）")
             }
+            com.vibeadb.app.core.RingLog.log("app", "ensureStarted (relay=${prefs.relayHost})")
             val ok = GatewayConnection.ensureStarted(this, prefs.password, prefs.relayHost, prefs.deviceId)
+            com.vibeadb.app.core.RingLog.log("app", "ensureStarted -> $ok")
             if (!ok) throw IllegalStateException("网关启动失败")
             val pairing = Pairing.worker(prefs.relayHost, prefs.deviceId, prefs.password)
             // 网关状态轮询（跨进程，AIDL）
@@ -101,6 +103,7 @@ class SessionService : Service() {
                 Thread.sleep(2000)
             }
         } catch (t: Throwable) {
+            com.vibeadb.app.core.RingLog.log("app", "session error: ${t.javaClass.simpleName}: ${t.message}")
             if (!stopped) {
                 SessionState.update(SessionUiState.Failed(t.message ?: t.javaClass.simpleName))
                 stopSessionInternal()
@@ -116,6 +119,7 @@ class SessionService : Service() {
     private fun stopSessionInternal() {
         stopped = true
         sessionActive = false
+        com.vibeadb.app.core.RingLog.log("app", "session stopped")
         try { GatewayConnection.stopSession(this) } catch (_: Throwable) {}
         try { wakeLock?.release() } catch (_: Throwable) {}
         wakeLock = null

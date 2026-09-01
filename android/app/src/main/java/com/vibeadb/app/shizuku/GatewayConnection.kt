@@ -28,7 +28,7 @@ object GatewayConnection : ServiceConnection {
         latch = CountDownLatch(1)
         val a = Shizuku.UserServiceArgs(ComponentName(context, GatewayService::class.java))
             .processNameSuffix("gateway")
-            .version(2)
+            .version(3)
             .tag("vibeadb")
         args = a
         Shizuku.bindUserService(a, this)
@@ -46,8 +46,16 @@ object GatewayConnection : ServiceConnection {
         binder = null
     }
 
-    /** 网关连接状态（"idle"/"connecting"/"online"/"retrying"），未绑定返回 null */
+    /** 网关连接状态（"idle"/"connecting"/"online"/"retrying | ..."），未绑定返回 null */
     fun currentStatus(): String? = binder?.status()
+
+    /** 网关进程环形日志，未绑定返回 null */
+    fun logs(): String? = binder?.logs()
+
+    fun clearLogs() {
+        binder?.clearLogs()
+        com.vibeadb.app.core.RingLog.clear()
+    }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         binder = IGatewayService.Stub.asInterface(service)

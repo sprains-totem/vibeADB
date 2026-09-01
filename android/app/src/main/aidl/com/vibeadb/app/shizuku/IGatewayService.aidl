@@ -7,8 +7,13 @@ interface IGatewayService {
      */
     boolean start(String password, String relayHost, String deviceId);
 
-    /** "idle" / "connecting" / "online" / "retrying" */
+    /** "idle" / "connecting" / "online" / "retrying | lastClose: ..." */
     String status();
+
+    /** 网关进程环形日志（实时诊断用） */
+    String getLogs();
+
+    void clearLogs();
 
     /** Shizuku UserService 清理回调（transaction 16777115），必须 System.exit */
     void destroy();

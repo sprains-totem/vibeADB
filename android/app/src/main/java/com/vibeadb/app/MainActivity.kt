@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +48,7 @@ import androidx.core.content.ContextCompat
 import com.vibeadb.app.core.Pairing
 import com.vibeadb.app.core.Prefs
 import rikka.shizuku.Shizuku
+import kotlinx.coroutines.delay
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -128,6 +131,7 @@ class MainActivity : ComponentActivity() {
             ShizukuCard(shizukuText) { requestShizukuPermission() }
             CrashCard()
             SessionCard(state, onStart = { requestNotifThenStart() }, onStop = { stopSessionService() })
+            LogCard()
             SettingsCard(prefs)
         }
     }
@@ -258,6 +262,80 @@ class MainActivity : ComponentActivity() {
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+        }
+    }
+
+    @Composable
+    private fun LogCard() {
+        val ctx = LocalContext.current
+        var expanded by remember { mutableStateOf(false) }
+        var text by remember { mutableStateOf("") }
+        val scroll = rememberScrollState()
+
+        LaunchedEffect(expanded) {
+            while (expanded) {
+                text = GatewayConnection.logs() ?: "(网关未绑定：先开始会话)"
+                delay(1000)
+            }
+        }
+        LaunchedEffect(text) {
+            if (expanded) scroll.animateScrollTo(scroll.maxValue)
+        }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text("实时日志", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    Button(onClick = { expanded = !expanded }) {
+                        Text(if (expanded) "收起" else "展开")
+                    }
+                }
+                if (expanded) {
+                    Text(
+                        text.ifBlank { "(空)" },
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
+                            .verticalScroll(scroll)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { copyText(ctx, "log", text) }) { Text("复制") }
+                        OutlinedButton(onClick = {
+                            val msg = exportLog(ctx, text)
+                            Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                        }) { Text("导出") }
+                        OutlinedButton(onClick = {
+                            GatewayConnection.clearLogs()
+                            Toast.makeText(ctx, "已清除", Toast.LENGTH_SHORT).show()
+                        }) { Text("清除") }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun exportLog(ctx: Context, text: String): String {
+        val name = "vibeadb-log-" +
+            java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US)
+                .format(java.util.Date()) + ".txt"
+        return if (Build.VERSION.SDK_INT >= 29) {
+            val cv = android.content.ContentValues().apply {
+                put(android.provider.MediaStore.Downloads.DISPLAY_NAME, name)
+                put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/plain")
+            }
+            val uri = ctx.contentResolver.insert(
+                android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, cv
+            )
+            ctx.contentResolver.openOutputStream(uri!!)!!.use { it.write(text.toByteArray()) }
+            "已导出到 下载/$name"
+        } else {
+            val f = File(ctx.getExternalFilesDir(null), name)
+            f.writeText(text)
+            "已导出到 ${f.absolutePath}"
         }
     }
 
