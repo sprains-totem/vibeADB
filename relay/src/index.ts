@@ -201,8 +201,9 @@ export default {
     const id = env.RELAY.idFromName(deviceId.toLowerCase());
     const stub = env.RELAY.get(id);
 
-    // 归一化后转发升级请求给 DO（deviceId 进 query，DO 内部 addDevice/addClient）
-    const relayUrl = new URL(`https://relay.internal/${role}`);
+    // 归一化后转发升级请求给 DO（DO 内部路由：/device、/connect）
+    const doPath = role === "device" ? "/device" : "/connect";
+    const relayUrl = new URL(`https://relay.internal${doPath}`);
     relayUrl.searchParams.set("deviceId", deviceId.toLowerCase());
     return stub.fetch(new Request(relayUrl.toString(), request));
   },
