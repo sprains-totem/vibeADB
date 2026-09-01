@@ -25,6 +25,13 @@ class RelayTunnelClient(
 
     @Volatile private var authed = false
 
+    /** 最近一次连接关闭的详细信息（诊断用） */
+    @Volatile var lastCloseInfo: String = "-"
+        private set
+
+    @Volatile var lastOpenInfo: String = "-"
+        private set
+
     init {
         addHeader("X-Device-Id", deviceId)
         try {
@@ -37,6 +44,7 @@ class RelayTunnelClient(
     }
 
     override fun onOpen(handshakedata: ServerHandshake?) {
+        lastOpenInfo = "http=${handshakedata?.httpStatus} msg=${handshakedata?.httpStatusMessage}"
         onState("online")
         authed = false
     }
@@ -84,6 +92,7 @@ class RelayTunnelClient(
     }
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
+        lastCloseInfo = "code=$code remote=$remote reason=${reason ?: "-"}"
         dispatcher.cancel(this)
         authed = false
     }

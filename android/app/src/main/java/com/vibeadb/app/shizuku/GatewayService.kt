@@ -62,7 +62,10 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
         return true
     }
 
-    override fun status(): String = state
+    override fun status(): String = when (state) {
+        "retrying", "connecting" -> "$state | lastClose: ${client?.lastCloseInfo ?: "-"} | lastOpen: ${client?.lastOpenInfo ?: "-"}"
+        else -> state
+    }
 
     override fun destroy() {
         stopTunnel()
