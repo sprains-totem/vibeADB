@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.vibeadb.app.core.Prefs
-import dev.rikka.shizuku.Shizuku
+import rikka.shizuku.Shizuku
 
 class MainActivity : ComponentActivity() {
 
