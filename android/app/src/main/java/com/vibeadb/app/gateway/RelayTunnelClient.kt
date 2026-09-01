@@ -28,7 +28,7 @@ class RelayTunnelClient(
     init {
         addHeader("X-Device-Id", deviceId)
         try {
-            socketFactory = SSLSocketFactory.getDefault() as SSLSocketFactory
+            setSocketFactory(SSLSocketFactory.getDefault() as SSLSocketFactory)
         } catch (_: Throwable) {
         }
     }

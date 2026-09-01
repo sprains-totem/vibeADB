@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Relay, type WsLike } from "../src/relay";
+import { Relay, type WsLike } from "../src/index";
 
 class FakeWS implements WsLike {
   sent: (string | ArrayBuffer)[] = [];

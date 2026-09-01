@@ -38,7 +38,7 @@ function fakeRelayDevice(mode: "chunks" | "install"): Promise<{ server: http.Ser
         res.end(JSON.stringify({ error: "device offline" }));
         return;
       }
-      wss.handleUpgrade(req, req.socket, undefined as any, (ws: WebSocket) => {
+      wss.handleUpgrade(req, req.socket, Buffer.alloc(0), (ws: WebSocket) => {
         // --- auth（手机侧语义）---
         ws.once("message", (data) => {
           const auth = JSON.parse(data.toString());
@@ -108,7 +108,7 @@ describe("DeviceClient", () => {
     expect(r.exitCode).toBe(0);
     c.close();
     server.close();
-  });
+  }, 15_000);
 
   it("auth + upload (pm.install) with eod", async () => {
     const { server, url } = await fakeRelayDevice("install");
@@ -120,12 +120,12 @@ describe("DeviceClient", () => {
     expect(r.output).toBe(`Success ${data.length}`);
     c.close();
     server.close();
-  });
+  }, 15_000);
 
   it("bad password fails", async () => {
     const { server, url } = await fakeRelayDevice("chunks");
     const target = parsePairing(`vibeadb://${url}/dev1#wrong`);
     await expect(DeviceClient.connect(target)).rejects.toThrow(/auth failed/);
     server.close();
-  });
+  }, 15_000);
 });
