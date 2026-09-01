@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.vibeadb.app.core.Pairing
 import com.vibeadb.app.core.Prefs
+import com.vibeadb.app.shizuku.GatewayConnection
 import rikka.shizuku.Shizuku
 import kotlinx.coroutines.delay
 import java.io.File

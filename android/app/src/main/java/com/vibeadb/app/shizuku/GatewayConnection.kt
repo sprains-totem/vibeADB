@@ -50,7 +50,7 @@ object GatewayConnection : ServiceConnection {
     fun currentStatus(): String? = binder?.status()
 
     /** 网关进程环形日志，未绑定返回 null */
-    fun logs(): String? = binder?.logs()
+    fun logs(): String? = binder?.getLogs()
 
     fun clearLogs() {
         binder?.clearLogs()
