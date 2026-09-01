@@ -1,0 +1,8 @@
+job: mcp | conclusion: failure | sha: 1fb0b78
+--- staging dir ---
+total 28
+drwxr-xr-x  2 runner runner  4096 Sep  1 09:09 .
+drwxr-xr-x 10 runner runner  4096 Sep  1 09:08 ..
+-rw-r--r--  1 runner runner    66 Sep  1 09:09 mcp-1fb0b78.marker
+-rw-r--r--  1 runner runner   283 Sep  1 09:09 mcp-install.log
+-rw-r--r--  1 runner runner 11026 Sep  1 09:09 mcp-test.log
