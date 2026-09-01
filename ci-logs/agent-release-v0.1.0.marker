@@ -1,0 +1,11 @@
+job: agent-release | conclusion: success | tag: v0.1.0
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:25 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:24 ..
+-rw-r--r--  1 runner runner    0 Sep  1 08:24 agent-release-build.log
+-rw-r--r--  1 runner runner   52 Sep  1 08:24 agent-release-mod.log
+-rw-r--r--  1 runner runner   24 Sep  1 08:25 agent-release-progress.log
+-rw-r--r--  1 runner runner   26 Sep  1 08:24 agent-release-test.log
+-rw-r--r--  1 runner runner   75 Sep  1 08:25 agent-release-v0.1.0.marker
+-rw-r--r--  1 runner runner    0 Sep  1 08:24 agent-release-vet.log
