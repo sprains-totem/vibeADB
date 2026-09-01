@@ -122,9 +122,9 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch --depth=1 origin ci-logs 2>/dev/null || true
             if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-              git checkout --detach FETCH_HEAD
+              git checkout -f --detach FETCH_HEAD
             else
-              git checkout --detach
+              git checkout -f --detach
             fi
             mkdir -p ci-logs
             cp -f "$STAGE"/* ci-logs/ || true
@@ -157,7 +157,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npm install 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/relay-release-install.log"
+          npm ci 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/relay-release-install.log"
           npm test 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/relay-release-test.log"
           npx wrangler deploy --dry-run --outdir=dist 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/relay-release-build.log"
 
@@ -189,9 +189,9 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch --depth=1 origin ci-logs 2>/dev/null || true
             if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-              git checkout --detach FETCH_HEAD
+              git checkout -f --detach FETCH_HEAD
             else
-              git checkout --detach
+              git checkout -f --detach
             fi
             cd "$(git rev-parse --show-toplevel)"
             mkdir -p ci-logs
@@ -225,7 +225,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npm install 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/mcp-release-install.log"
+          npm ci 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/mcp-release-install.log"
           npm test 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/mcp-release-test.log"
           npm run build 2>&1 | tee "$GITHUB_WORKSPACE/.ci-staging/mcp-release-build.log"
 
@@ -257,9 +257,9 @@ jobs:
           for attempt in 1 2 3 4 5; do
             git fetch --depth=1 origin ci-logs 2>/dev/null || true
             if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-              git checkout --detach FETCH_HEAD
+              git checkout -f --detach FETCH_HEAD
             else
-              git checkout --detach
+              git checkout -f --detach
             fi
             cd "$(git rev-parse --show-toplevel)"
             mkdir -p ci-logs
