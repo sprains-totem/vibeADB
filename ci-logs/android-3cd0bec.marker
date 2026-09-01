@@ -1,0 +1,13 @@
+job: android | conclusion: success | sha: 3cd0bec
+--- progress ---
+22:20:16 job start
+22:22:27 unit tests done
+22:23:02 assemble done
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 22:23 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 22:22 ..
+-rw-r--r--  1 runner runner  154 Sep  1 22:23 android-3cd0bec.marker
+-rw-r--r--  1 runner runner 2580 Sep  1 22:23 android-build.log
+-rw-r--r--  1 runner runner   67 Sep  1 22:23 android-progress.log
+-rw-r--r--  1 runner runner 1601 Sep  1 22:22 android-test.log
