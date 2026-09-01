@@ -1,0 +1,9 @@
+job: mcp | conclusion: success | sha: 3cd0bec
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 22:20 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 22:20 ..
+-rw-r--r--  1 runner runner   66 Sep  1 22:20 mcp-3cd0bec.marker
+-rw-r--r--  1 runner runner   51 Sep  1 22:20 mcp-build.log
+-rw-r--r--  1 runner runner  282 Sep  1 22:20 mcp-install.log
+-rw-r--r--  1 runner runner  521 Sep  1 22:20 mcp-test.log
