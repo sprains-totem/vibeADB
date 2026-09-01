@@ -1,0 +1,9 @@
+job: relay | conclusion: success | sha: 3cd0bec
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 22:20 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 22:20 ..
+-rw-r--r--  1 runner runner   68 Sep  1 22:20 relay-3cd0bec.marker
+-rw-r--r--  1 runner runner  735 Sep  1 22:20 relay-build.log
+-rw-r--r--  1 runner runner  517 Sep  1 22:20 relay-install.log
+-rw-r--r--  1 runner runner  521 Sep  1 22:20 relay-test.log
