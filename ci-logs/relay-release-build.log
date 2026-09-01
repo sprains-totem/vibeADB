@@ -1,5 +1,5 @@
 
- ⛅️ wrangler 3.114.17 (update available 4.127.1)
+ ⛅️ wrangler 3.114.17 (update available 4.128.0)
 ------------------------------------------------
 
 [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe version of Wrangler you are using is now out-of-date.[0m
@@ -9,7 +9,7 @@
   After installation, run Wrangler with `npx wrangler`.
 
 
-Total Upload: 4.79 KiB / gzip: 1.74 KiB
+Total Upload: 5.12 KiB / gzip: 1.86 KiB
 Your worker has access to the following bindings:
 - Durable Objects:
   - RELAY: Relay
