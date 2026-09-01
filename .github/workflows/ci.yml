@@ -53,20 +53,37 @@ jobs:
           gradle --no-daemon :app:testDebugUnitTest 2>&1 | tee "$STAGE/android-test.log"
           echo "$(date -u +%T) unit tests done" >> "$STAGE/android-progress.log"
 
-      - name: Build release APK（临时签名，仅验证可构建；正式发布见 release.yml）
+      - name: Prepare signing keystore（secrets 优先，保证 artifact APK 签名一致）
+        id: ks
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$GITHUB_WORKSPACE/release.keystore"
+          else
+            keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/release.keystore" \
+              -storepass vibeadb123 -keypass vibeadb123 -alias vibeadb \
+              -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB"
+          fi
+          {
+            echo "store_pass=${STORE_PASS:-vibeadb123}"
+            echo "key_pass=${KEY_PASS:-vibeadb123}"
+            echo "key_alias=${KEY_ALIAS:-vibeadb}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build release APK
         shell: bash
         working-directory: android
         env:
-          VIBEADB_STORE_FILE: ${{ github.workspace }}/ci-keystore.jks
-          VIBEADB_STORE_PASSWORD: vibeadb123
-          VIBEADB_KEY_PASSWORD: vibeadb123
-          VIBEADB_KEY_ALIAS: vibeadb
+          VIBEADB_STORE_FILE: ${{ github.workspace }}/release.keystore
+          VIBEADB_STORE_PASSWORD: ${{ steps.ks.outputs.store_pass }}
+          VIBEADB_KEY_PASSWORD: ${{ steps.ks.outputs.key_pass }}
+          VIBEADB_KEY_ALIAS: ${{ steps.ks.outputs.key_alias }}
         run: |
           set -o pipefail
-          keytool -genkeypair -v -keystore "$GITHUB_WORKSPACE/ci-keystore.jks" \
-            -storepass vibeadb123 -keypass vibeadb123 -alias vibeadb \
-            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB" \
-            > "$STAGE/android-build.log" 2>&1 || true
           gradle --no-daemon :app:assembleRelease 2>&1 | tee -a "$STAGE/android-build.log"
           echo "$(date -u +%T) assemble done" >> "$STAGE/android-progress.log"
 
