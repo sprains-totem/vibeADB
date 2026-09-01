@@ -1,0 +1,8 @@
+job: mcp | conclusion: failure | sha: 46c4a3d
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 09:14 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 09:13 ..
+-rw-r--r--  1 runner runner   66 Sep  1 09:14 mcp-46c4a3d.marker
+-rw-r--r--  1 runner runner  283 Sep  1 09:14 mcp-install.log
+-rw-r--r--  1 runner runner 4850 Sep  1 09:14 mcp-test.log
