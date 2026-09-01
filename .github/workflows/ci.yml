@@ -23,13 +23,16 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       STAGE: ${{ github.workspace }}/.ci-staging
     steps:
       - uses: actions/checkout@v4
 
       - name: Prepare staging
-        run: mkdir -p "$STAGE"
+        run: |
+          mkdir -p "$STAGE"
+          echo "$(date -u +%T) job start" >> "$STAGE/android-progress.log"
 
       - uses: actions/setup-java@v4
         with:
@@ -55,6 +58,7 @@ jobs:
             ls -la android/app/src/main/jniLibs/arm64-v8a/
             file android/app/src/main/jniLibs/arm64-v8a/libcloudflared.so
           } 2>&1 | tee "$STAGE/android-cloudflared.log"
+          echo "$(date -u +%T) cloudflared done" >> "$STAGE/android-progress.log"
 
       - name: Dependency diagnostic（shizuku/websocket 是否在编译类路径上）
         shell: bash
@@ -63,6 +67,7 @@ jobs:
           gradle --no-daemon :app:dependencies --configuration debugCompileClasspath 2>&1 \
             | grep -Ei "shizuku|Java-WebSocket|FAILED|Could not|ERROR|com.android.tools" \
             | tee "$STAGE/android-deps.log" || true
+          echo "$(date -u +%T) deps diag done" >> "$STAGE/android-progress.log"
 
       - name: Unit tests
         shell: bash
@@ -70,6 +75,7 @@ jobs:
         run: |
           set -o pipefail
           gradle --no-daemon :app:testDebugUnitTest 2>&1 | tee "$STAGE/android-test.log"
+          echo "$(date -u +%T) unit tests done" >> "$STAGE/android-progress.log"
 
       - name: Build release APK（临时签名，仅验证可构建；正式发布见 release.yml）
         shell: bash
@@ -86,11 +92,15 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=vibeADB" \
             > "$STAGE/android-build.log" 2>&1 || true
           gradle --no-daemon :app:assembleRelease 2>&1 | tee -a "$STAGE/android-build.log"
+          echo "$(date -u +%T) assemble done" >> "$STAGE/android-progress.log"
 
       - uses: actions/upload-artifact@v4
         with:
           name: vibeADB-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Mark artifact uploaded
+        run: echo "$(date -u +%T) artifact uploaded" >> "$STAGE/android-progress.log"
 
       - name: Report to ci-logs branch
         if: always()
@@ -100,6 +110,8 @@ jobs:
           set -e
           {
             echo "job: android | conclusion: $CONCLUSION | sha: ${GITHUB_SHA:0:7}"
+            echo "--- progress ---"
+            cat "$STAGE/android-progress.log" || true
             echo "--- staging dir ---"
             ls -la "$STAGE" || true
           } > "$STAGE/android-${GITHUB_SHA:0:7}.marker"
