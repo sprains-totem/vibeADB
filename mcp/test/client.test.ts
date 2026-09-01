@@ -64,12 +64,12 @@ function fakeRelayDevice(mode: "chunks" | "install"): Promise<{ server: http.Ser
               ws.send(Buffer.concat([idb, Buffer.from("world")]), { binary: true });
               reply({ exitCode: 0 });
             } else {
-              // install：收满 size 字节 + eod
-              const params = JSON.parse(req.params ?? "{}");
+              // install：收满 size 字节 + eod（req.params 已是对象）
+              const size = req.params?.size ?? 0;
               const got: Buffer[] = [];
               let total = 0;
               const onMsg = (d: Buffer, bin: boolean) => {
-                if (bin && total < params.size) {
+                if (bin && total < size) {
                   got.push(d.subarray(4));
                   total += d.length - 4;
                   return;
