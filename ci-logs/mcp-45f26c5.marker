@@ -1,0 +1,9 @@
+job: mcp | conclusion: success | sha: 45f26c5
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 13:28 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 13:27 ..
+-rw-r--r--  1 runner runner   66 Sep  1 13:28 mcp-45f26c5.marker
+-rw-r--r--  1 runner runner   51 Sep  1 13:27 mcp-build.log
+-rw-r--r--  1 runner runner  283 Sep  1 13:27 mcp-install.log
+-rw-r--r--  1 runner runner  521 Sep  1 13:27 mcp-test.log
