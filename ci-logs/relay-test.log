@@ -5,10 +5,10 @@
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/vibeADB/vibeADB/relay[39m
 
- [32m✓[39m test/relay.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m test/relay.test.ts [2m([22m[2m8 tests[22m[2m)[22m[90m 6[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[32m8 passed[39m[22m[90m (8)[39m
-[2m   Start at [22m 22:20:27
-[2m   Duration [22m 310ms[2m (transform 66ms, setup 0ms, collect 63ms, tests 7ms, environment 0ms, prepare 70ms)[22m
+[2m   Start at [22m 22:30:30
+[2m   Duration [22m 292ms[2m (transform 56ms, setup 0ms, collect 62ms, tests 6ms, environment 0ms, prepare 59ms)[22m
 
