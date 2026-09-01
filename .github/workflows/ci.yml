@@ -117,17 +117,21 @@ jobs:
           } > "$STAGE/android-${GITHUB_SHA:0:7}.marker"
           git config user.name "ci-log-bot"
           git config user.email "ci-log-bot@users.noreply.github.com"
-          git fetch --depth=1 origin ci-logs 2>/dev/null || true
-          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-            git checkout --detach FETCH_HEAD
-          else
-            git checkout --detach
-          fi
-          mkdir -p ci-logs
-          cp -f "$STAGE"/* ci-logs/ || true
-          git add -A -f ci-logs
-          git commit -m "ci: android ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
-          git push origin HEAD:refs/heads/ci-logs
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth=1 origin ci-logs 2>/dev/null || true
+            if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+              git checkout --detach FETCH_HEAD
+            else
+              git checkout --detach
+            fi
+            mkdir -p ci-logs
+            cp -f "$STAGE"/* ci-logs/ || true
+            git add -A -f ci-logs
+            git commit -m "ci: android ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+            if git push origin HEAD:refs/heads/ci-logs; then break; fi
+            echo "push rejected (race), retry $attempt"
+            sleep $((attempt * 5))
+          done
 
   worker:
     runs-on: ubuntu-latest
@@ -181,18 +185,22 @@ jobs:
           } > "$STAGE/worker-${GITHUB_SHA:0:7}.marker"
           git config user.name "ci-log-bot"
           git config user.email "ci-log-bot@users.noreply.github.com"
-          git fetch --depth=1 origin ci-logs 2>/dev/null || true
-          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-            git checkout --detach FETCH_HEAD
-          else
-            git checkout --detach
-          fi
-          cd "$(git rev-parse --show-toplevel)"
-          mkdir -p ci-logs
-          cp -f "$STAGE"/* ci-logs/ || true
-          git add -A -f ci-logs
-          git commit -m "ci: worker ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
-          git push origin HEAD:refs/heads/ci-logs
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth=1 origin ci-logs 2>/dev/null || true
+            if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+              git checkout --detach FETCH_HEAD
+            else
+              git checkout --detach
+            fi
+            cd "$(git rev-parse --show-toplevel)"
+            mkdir -p ci-logs
+            cp -f "$STAGE"/* ci-logs/ || true
+            git add -A -f ci-logs
+            git commit -m "ci: worker ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+            if git push origin HEAD:refs/heads/ci-logs; then break; fi
+            echo "push rejected (race), retry $attempt"
+            sleep $((attempt * 5))
+          done
 
   agent:
     runs-on: ubuntu-latest
@@ -249,15 +257,19 @@ jobs:
           } > "$STAGE/agent-${GITHUB_SHA:0:7}.marker"
           git config user.name "ci-log-bot"
           git config user.email "ci-log-bot@users.noreply.github.com"
-          git fetch --depth=1 origin ci-logs 2>/dev/null || true
-          if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
-            git checkout --detach FETCH_HEAD
-          else
-            git checkout --detach
-          fi
-          cd "$(git rev-parse --show-toplevel)"
-          mkdir -p ci-logs
-          cp -f "$STAGE"/* ci-logs/ || true
-          git add -A -f ci-logs
-          git commit -m "ci: agent ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
-          git push origin HEAD:refs/heads/ci-logs
+          for attempt in 1 2 3 4 5; do
+            git fetch --depth=1 origin ci-logs 2>/dev/null || true
+            if git rev-parse -q --verify FETCH_HEAD >/dev/null 2>&1; then
+              git checkout --detach FETCH_HEAD
+            else
+              git checkout --detach
+            fi
+            cd "$(git rev-parse --show-toplevel)"
+            mkdir -p ci-logs
+            cp -f "$STAGE"/* ci-logs/ || true
+            git add -A -f ci-logs
+            git commit -m "ci: agent ${CONCLUSION} ${GITHUB_SHA:0:7}" --allow-empty
+            if git push origin HEAD:refs/heads/ci-logs; then break; fi
+            echo "push rejected (race), retry $attempt"
+            sleep $((attempt * 5))
+          done
