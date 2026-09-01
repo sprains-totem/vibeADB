@@ -5,10 +5,10 @@
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/vibeADB/vibeADB/mcp[39m
 
- [32m✓[39m test/client.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m test/client.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 35[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
 [2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
-[2m   Start at [22m 13:57:54
-[2m   Duration [22m 245ms[2m (transform 49ms, setup 0ms, collect 74ms, tests 23ms, environment 0ms, prepare 38ms)[22m
+[2m   Start at [22m 14:11:17
+[2m   Duration [22m 361ms[2m (transform 67ms, setup 0ms, collect 97ms, tests 35ms, environment 0ms, prepare 54ms)[22m
 
