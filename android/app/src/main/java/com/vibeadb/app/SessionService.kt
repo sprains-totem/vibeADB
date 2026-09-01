@@ -30,10 +30,16 @@ class SessionService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START -> startSession()
-            ACTION_STOP -> stopSession()
-            else -> stopSelf()
+        try {
+            when (intent?.action) {
+                ACTION_START -> startSession()
+                ACTION_STOP -> stopSession()
+                else -> stopSelf()
+            }
+        } catch (t: Throwable) {
+            // 主线程异常不再直接闪退，转成 UI 可见的错误
+            SessionState.update(SessionUiState.Failed("服务启动异常: ${t.javaClass.simpleName}: ${t.message}"))
+            stopSelf()
         }
         return START_NOT_STICKY
     }
@@ -52,7 +58,12 @@ class SessionService : Service() {
         } else {
             0
         }
-        ServiceCompat.startForeground(this, NOTIF_ID, notif, type)
+        try {
+            ServiceCompat.startForeground(this, NOTIF_ID, notif, type)
+        } catch (t: Throwable) {
+            // 类型被系统拒绝时降级为无类型前台服务（类型按 manifest 声明解析）
+            startForeground(NOTIF_ID, notif)
+        }
     }
 
     private fun startSession() {

@@ -12,6 +12,7 @@
     </queries>
 
     <application
+        android:name=".VibeApp"
         android:label="vibeADB"
         android:icon="@drawable/ic_launcher"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"

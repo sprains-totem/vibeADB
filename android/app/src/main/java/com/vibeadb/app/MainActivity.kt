@@ -42,6 +42,7 @@ import androidx.core.content.ContextCompat
 import com.vibeadb.app.core.Pairing
 import com.vibeadb.app.core.Prefs
 import rikka.shizuku.Shizuku
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 
@@ -119,8 +120,31 @@ class MainActivity : ComponentActivity() {
                 fontWeight = FontWeight.Bold
             )
             ShizukuCard(shizukuText) { requestShizukuPermission() }
+            CrashCard()
             SessionCard(state, onStart = { requestNotifThenStart() }, onStop = { stopSessionService() })
             SettingsCard(prefs)
+        }
+    }
+
+    @Composable
+    private fun CrashCard() {
+        val ctx = LocalContext.current
+        val tick by UiTick.tick.collectAsState()
+        val crash = remember(tick) { File(ctx.filesDir, "crash-latest.txt").takeIf { it.exists() }?.readText() }
+        if (crash == null) return
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("上次崩溃报告", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                Text(crash.take(2000), style = MaterialTheme.typography.bodySmall)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { copyText(ctx, "crash", crash) }) { Text("复制崩溃报告") }
+                    OutlinedButton(onClick = {
+                        File(ctx.filesDir, "crash-latest.txt").delete()
+                        UiTick.bump()
+                        Toast.makeText(ctx, "已清除", Toast.LENGTH_SHORT).show()
+                    }) { Text("清除") }
+                }
+            }
         }
     }
 
