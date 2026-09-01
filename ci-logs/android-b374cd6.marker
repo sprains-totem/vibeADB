@@ -1,0 +1,13 @@
+job: android | conclusion: success | sha: b374cd6
+--- progress ---
+22:39:02 job start
+22:40:04 unit tests done
+22:40:40 assemble done
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 22:40 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 22:40 ..
+-rw-r--r--  1 runner runner  154 Sep  1 22:40 android-b374cd6.marker
+-rw-r--r--  1 runner runner 2580 Sep  1 22:40 android-build.log
+-rw-r--r--  1 runner runner   67 Sep  1 22:40 android-progress.log
+-rw-r--r--  1 runner runner 1601 Sep  1 22:40 android-test.log
