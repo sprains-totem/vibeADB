@@ -1,0 +1,10 @@
+job: android-release | conclusion: failure | tag: v2.0.2
+--- progress ---
+14:11:10 job start
+14:11:43 release attach attempted
+--- staging dir ---
+total 16
+drwxr-xr-x  2 runner runner 4096 Sep  1 14:11 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 14:11 ..
+-rw-r--r--  1 runner runner   53 Sep  1 14:11 android-release-progress.log
+-rw-r--r--  1 runner runner  147 Sep  1 14:11 android-release-v2.0.2.marker
