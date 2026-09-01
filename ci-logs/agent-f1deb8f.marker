@@ -1,0 +1,10 @@
+job: agent | conclusion: success | sha: f1deb8f
+--- staging dir ---
+total 20
+drwxr-xr-x  2 runner runner 4096 Sep  1 08:18 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 08:17 ..
+-rw-r--r--  1 runner runner    0 Sep  1 08:17 agent-build.log
+-rw-r--r--  1 runner runner   68 Sep  1 08:18 agent-f1deb8f.marker
+-rw-r--r--  1 runner runner   52 Sep  1 08:17 agent-mod.log
+-rw-r--r--  1 runner runner   26 Sep  1 08:17 agent-test.log
+-rw-r--r--  1 runner runner    0 Sep  1 08:17 agent-vet.log
