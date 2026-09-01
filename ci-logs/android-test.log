@@ -16,31 +16,21 @@ Daemon will be stopped at the end of the build
 > Task :app:parseDebugLocalResources
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
-> Task :app:preDebugUnitTestBuild UP-TO-DATE
-> Task :app:javaPreCompileDebugUnitTest
 > Task :app:javaPreCompileDebug
 > Task :app:processDebugManifestForPackage
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
 > Task :app:processDebugResources
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:bundleDebugClassesToCompileJar
+> Task :app:processDebugJavaRes
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:testDebugUnitTest
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1788304317332.json
 
-> Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:277:24 Unresolved reference 'GatewayConnection'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/MainActivity.kt:312:29 Unresolved reference 'GatewayConnection'.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:53:35 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/vibeADB/vibeADB/android/app/src/main/java/com/vibeadb/app/shizuku/GatewayConnection.kt:53:39 No value passed for parameter 'value'.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1788304032238.json
-
-FAILURE: Build failed with an exception.
-
-* What went wrong:
-Execution failed for task ':app:compileDebugKotlin'.
-> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
-   > Compilation error. See log for more details
-
-* Try:
-> Run with --stacktrace option to get the stack trace.
-> Run with --info or --debug option to get more log output.
-> Run with --scan to get full insights.
-> Get more help at https://help.gradle.org.
-
-BUILD FAILED in 27s
-18 actionable tasks: 18 executed
+BUILD SUCCESSFUL in 36s
+25 actionable tasks: 25 executed

@@ -1,0 +1,13 @@
+job: android | conclusion: success | sha: 81229bd
+--- progress ---
+23:11:17 job start
+23:12:29 unit tests done
+23:13:08 assemble done
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  1 23:13 .
+drwxr-xr-x 10 runner runner 4096 Sep  1 23:12 ..
+-rw-r--r--  1 runner runner  154 Sep  1 23:13 android-81229bd.marker
+-rw-r--r--  1 runner runner 2580 Sep  1 23:13 android-build.log
+-rw-r--r--  1 runner runner   67 Sep  1 23:13 android-progress.log
+-rw-r--r--  1 runner runner 1601 Sep  1 23:12 android-test.log
