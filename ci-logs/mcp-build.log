@@ -1,0 +1,4 @@
+
+> vibeadb-mcp@2.0.0 build
+> tsc -p tsconfig.json
+

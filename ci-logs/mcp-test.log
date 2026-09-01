@@ -5,52 +5,10 @@
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/vibeADB/vibeADB/mcp[39m
 
- [31m❯[39m test/client.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 15025[2mms[22m[39m
-[31m   [31m×[31m DeviceClient[2m > [22mauth + upload (pm.install) with eod[33m 15001[2mms[22m[31m[39m
-[31m     → Test timed out in 15000ms.
-If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+ [32m✓[39m test/client.test.ts [2m([22m[2m7 tests[22m[2m)[22m[90m 22[2mms[22m[39m
 
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 09:17:08
+[2m   Duration [22m 249ms[2m (transform 52ms, setup 0ms, collect 76ms, tests 22ms, environment 0ms, prepare 41ms)[22m
 
-[31m[1m[7m FAIL [27m[22m[39m test/client.test.ts[2m > [22mDeviceClient[2m > [22mauth + upload (pm.install) with eod
-[31m[1mError[22m: Test timed out in 15000ms.
-If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-[31m⎯⎯⎯⎯⎯⎯[1m[7m Unhandled Errors [27m[22m⎯⎯⎯⎯⎯⎯[39m
-[31m[1m
-Vitest caught 1 unhandled error during the test run.
-This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.[22m[39m
-
-[31m⎯⎯⎯⎯⎯[1m[7m Uncaught Exception [27m[22m⎯⎯⎯⎯⎯[39m
-[31m[1mSyntaxError[22m: "[object Object]" is not valid JSON[39m
-[36m [2m❯[22m WebSocket.<anonymous> test/client.test.ts:[2m68:35[22m[39m
-    [90m 66| [39m            } [35melse[39m {
-    [90m 67| [39m              [90m// install：收满 size 字节 + eod[39m
-    [90m 68| [39m              [35mconst[39m params [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(req[33m.[39mparams [33m??[39m [32m"{}"[39m)[33m;[39m
-    [90m   | [39m                                  [31m^[39m
-    [90m 69| [39m              [35mconst[39m got[33m:[39m [33mBuffer[39m[] [33m=[39m [][33m;[39m
-    [90m 70| [39m              [35mlet[39m total [33m=[39m [34m0[39m[33m;[39m
-[90m [2m❯[22m Object.onceWrapper node:events:[2m639:26[22m[39m
-[90m [2m❯[22m WebSocket.emit node:events:[2m524:28[22m[39m
-[90m [2m❯[22m Receiver.receiverOnMessage node_modules/ws/lib/websocket.js:[2m1239:20[22m[39m
-[90m [2m❯[22m Receiver.emit node:events:[2m524:28[22m[39m
-[90m [2m❯[22m Receiver.dataMessage node_modules/ws/lib/receiver.js:[2m633:14[22m[39m
-[90m [2m❯[22m Receiver.getData node_modules/ws/lib/receiver.js:[2m532:10[22m[39m
-[90m [2m❯[22m Receiver.startLoop node_modules/ws/lib/receiver.js:[2m190:16[22m[39m
-[90m [2m❯[22m Receiver._write node_modules/ws/lib/receiver.js:[2m117:10[22m[39m
-
-[31mThis error originated in "[1mtest/client.test.ts[22m" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.[39m
-[31mThe latest test that might've caused the error is "[1mauth + upload (pm.install) with eod[22m". It might mean one of the following:
-- The error was thrown, while Vitest was running this test.
-- If the error occurred after the test had been completed, this was the last documented test before it was thrown.[39m
-[31m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39m
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (7)[39m
-[2m     Errors [22m [1m[31m1 error[39m[22m
-[2m   Start at [22m 09:14:08
-[2m   Duration [22m 15.43s[2m (transform 79ms, setup 0ms, collect 128ms, tests 15.02s, environment 0ms, prepare 70ms)[22m
-
-
-::error file=/home/runner/work/vibeADB/vibeADB/mcp/test/client.test.ts,title=Unhandled error,line=68,column=35::SyntaxError: "[object Object]" is not valid JSON%0A ❯ WebSocket.<anonymous> test/client.test.ts:68:35%0A ❯ Object.onceWrapper node:events:639:26%0A ❯ WebSocket.emit node:events:524:28%0A ❯ Receiver.receiverOnMessage node_modules/ws/lib/websocket.js:1239:20%0A ❯ Receiver.emit node:events:524:28%0A ❯ Receiver.dataMessage node_modules/ws/lib/receiver.js:633:14%0A ❯ Receiver.getData node_modules/ws/lib/receiver.js:532:10%0A ❯ Receiver.startLoop node_modules/ws/lib/receiver.js:190:16%0A ❯ Receiver._write node_modules/ws/lib/receiver.js:117:10%0A%0AThis error originated in "test/client.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.%0AThe latest test that might've caused the error is "auth + upload (pm.install) with eod". It might mean one of the following:%0A- The error was thrown, while Vitest was running this test.%0A- If the error occurred after the test had been completed, this was the last documented test before it was thrown.%0A
