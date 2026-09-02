@@ -1,0 +1,9 @@
+job: relay | conclusion: success | sha: c30f6d9
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  2 00:09 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 00:09 ..
+-rw-r--r--  1 runner runner  735 Sep  2 00:09 relay-build.log
+-rw-r--r--  1 runner runner   68 Sep  2 00:09 relay-c30f6d9.marker
+-rw-r--r--  1 runner runner  517 Sep  2 00:09 relay-install.log
+-rw-r--r--  1 runner runner  521 Sep  2 00:09 relay-test.log
