@@ -9,7 +9,7 @@
   After installation, run Wrangler with `npx wrangler`.
 
 
-Total Upload: 5.71 KiB / gzip: 2.01 KiB
+Total Upload: 5.84 KiB / gzip: 2.06 KiB
 Your worker has access to the following bindings:
 - Durable Objects:
   - RELAY: Relay

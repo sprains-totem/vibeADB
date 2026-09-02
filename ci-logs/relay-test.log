@@ -5,29 +5,10 @@
 
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90m/home/runner/work/vibeADB/vibeADB/relay[39m
 
- [31m❯[39m test/relay.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 34[2mms[22m[39m
-[31m   [31m×[31m edge relay session epoch fencing[2m > [22maccepts new session and rejects stale session[90m 7[2mms[22m[31m[39m
-[31m     → WebSocketPair is not defined[39m
+ [32m✓[39m test/relay.test.ts [2m([22m[2m4 tests[22m[2m)[22m[90m 25[2mms[22m[39m
 
-[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 15:33:40
+[2m   Duration [22m 323ms[2m (transform 62ms, setup 0ms, collect 63ms, tests 25ms, environment 0ms, prepare 67ms)[22m
 
-[31m[1m[7m FAIL [27m[22m[39m test/relay.test.ts[2m > [22medge relay session epoch fencing[2m > [22maccepts new session and rejects stale session
-[31m[1mReferenceError[22m: WebSocketPair is not defined[39m
-[36m [2m❯[22m Relay.fetch src/index.ts:[2m73:20[22m[39m
-    [90m 71| [39m      }
-    [90m 72| [39m
-    [90m 73| [39m      [35mconst[39m pair [33m=[39m [35mnew[39m [33mWebSocketPair[39m()[33m;[39m
-    [90m   | [39m                   [31m^[39m
-    [90m 74| [39m      [35mthis[39m[33m.[39m[34maddDevice[39m(pair[[34m1[39m] [35mas[39m unknown [35mas[39m [33mWsLike[39m[33m,[39m sid[33m,[39m epoch)[33m;[39m
-    [90m 75| [39m      [35mreturn[39m [34mws101[39m(pair[[34m0[39m])[33m;[39m
-[90m [2m❯[22m test/relay.test.ts:[2m69:28[22m[39m
-
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
-[2m   Start at [22m 15:30:07
-[2m   Duration [22m 393ms[2m (transform 74ms, setup 0ms, collect 74ms, tests 34ms, environment 0ms, prepare 69ms)[22m
-
-
-::error file=/home/runner/work/vibeADB/vibeADB/relay/src/index.ts,title=test/relay.test.ts > edge relay session epoch fencing > accepts new session and rejects stale session,line=73,column=20::ReferenceError: WebSocketPair is not defined%0A ❯ Relay.fetch src/index.ts:73:20%0A ❯ test/relay.test.ts:69:28%0A%0A

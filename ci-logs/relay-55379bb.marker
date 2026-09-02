@@ -1,0 +1,9 @@
+job: relay | conclusion: success | sha: 55379bb
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  2 15:33 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 15:33 ..
+-rw-r--r--  1 runner runner   68 Sep  2 15:33 relay-55379bb.marker
+-rw-r--r--  1 runner runner  735 Sep  2 15:33 relay-build.log
+-rw-r--r--  1 runner runner  517 Sep  2 15:33 relay-install.log
+-rw-r--r--  1 runner runner  523 Sep  2 15:33 relay-test.log
