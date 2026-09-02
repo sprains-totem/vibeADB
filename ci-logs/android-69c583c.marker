@@ -1,0 +1,10 @@
+job: android | conclusion: failure | sha: 69c583c
+--- progress ---
+15:29:56 job start
+--- staging dir ---
+total 20
+drwxr-xr-x  2 runner runner 4096 Sep  2 15:30 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 15:29 ..
+-rw-r--r--  1 runner runner  106 Sep  2 15:30 android-69c583c.marker
+-rw-r--r--  1 runner runner   19 Sep  2 15:29 android-progress.log
+-rw-r--r--  1 runner runner 2250 Sep  2 15:30 android-test.log

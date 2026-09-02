@@ -8,29 +8,26 @@ Daemon will be stopped at the end of the build
 > Task :app:checkDebugAarMetadata
 > Task :app:mapDebugSourceSetPaths
 > Task :app:generateDebugResources
-> Task :app:compileDebugAidl
-> Task :app:packageDebugResources
-> Task :app:createDebugCompatibleScreenManifests
-> Task :app:extractDeepLinksDebug
-> Task :app:parseDebugLocalResources
-> Task :app:mergeDebugResources
-> Task :app:processDebugMainManifest
-> Task :app:processDebugManifest
-> Task :app:processDebugManifestForPackage
-> Task :app:javaPreCompileDebug
-> Task :app:preDebugUnitTestBuild UP-TO-DATE
-> Task :app:javaPreCompileDebugUnitTest
-> Task :app:processDebugResources
-> Task :app:compileDebugKotlin
-> Task :app:compileDebugJavaWithJavac
-> Task :app:bundleDebugClassesToRuntimeJar
-> Task :app:bundleDebugClassesToCompileJar
-> Task :app:processDebugJavaRes
-> Task :app:compileDebugUnitTestKotlin
-> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
-> Task :app:processDebugUnitTestJavaRes
-> Task :app:testDebugUnitTest
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1788307802031.json
 
-BUILD SUCCESSFUL in 37s
-25 actionable tasks: 25 executed
+> Task :app:compileDebugAidl FAILED
+ERROR: /home/runner/work/vibeADB/vibeADB/android/app/src/main/aidl/com/vibeadb/app/shizuku/IGatewayService.aidl:20.9-17: You must either assign id's to all methods or to none of them.
+
+
+> Task :app:mergeDebugResources
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_2-1788363037229.json
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugAidl'.
+> A failure occurred while executing com.android.build.gradle.tasks.AidlCompile$AidlCompileRunnable
+   > com.android.ide.common.process.ProcessException: Error while executing process /usr/local/lib/android/sdk/build-tools/34.0.0/aidl with arguments {-p/usr/local/lib/android/sdk/platforms/android-35/framework.aidl -o/home/runner/work/vibeADB/vibeADB/android/app/build/generated/aidl_source_output_dir/debug/out -I/home/runner/work/vibeADB/vibeADB/android/app/src/main/aidl -I/home/runner/work/vibeADB/vibeADB/android/app/src/debug/aidl -I/home/runner/.gradle/caches/8.10.2/transforms/7476d9848fbf3022753ec9dd3c2c9186/transformed/core-1.15.0/aidl -I/home/runner/.gradle/caches/8.10.2/transforms/92accc93cd51e7d40b21bc95b2f63cc6/transformed/versionedparcelable-1.1.1/aidl -d/tmp/aidl8129934382268381660.d /home/runner/work/vibeADB/vibeADB/android/app/src/main/aidl/com/vibeadb/app/shizuku/IGatewayService.aidl}
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 20s
+7 actionable tasks: 7 executed
