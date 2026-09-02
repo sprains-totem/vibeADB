@@ -26,10 +26,10 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:mergeReleaseResources
 > Task :app:processReleaseMainManifest
 > Task :app:processReleaseManifest
-> Task :app:desugarReleaseFileDependencies
-> Task :app:processReleaseManifestForPackage
 > Task :app:javaPreCompileRelease
+> Task :app:desugarReleaseFileDependencies
 > Task :app:mergeReleaseStartupProfile
+> Task :app:processReleaseManifestForPackage
 > Task :app:mergeReleaseArtProfile
 > Task :app:mergeReleaseShaders
 > Task :app:compileReleaseShaders NO-SOURCE
@@ -41,9 +41,9 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:collectReleaseDependencies
 > Task :app:sdkReleaseDependencyData
 > Task :app:validateSigningRelease
-> Task :app:optimizeReleaseResources
 > Task :app:writeReleaseAppMetadata
 > Task :app:writeReleaseSigningConfigVersions
+> Task :app:optimizeReleaseResources
 > Task :app:mergeExtDexRelease
 > Task :app:compileReleaseKotlin
 > Task :app:compileReleaseJavaWithJavac
@@ -56,7 +56,7 @@ Unable to strip the following libraries, packaging them as they are: libandroidx
 > Task :app:packageRelease
 > Task :app:createReleaseApkListingFileRedirect
 > Task :app:assembleRelease
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1788306719043.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1788307992689.json
 
-BUILD SUCCESSFUL in 34s
+BUILD SUCCESSFUL in 36s
 46 actionable tasks: 46 executed
