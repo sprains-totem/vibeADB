@@ -1,0 +1,10 @@
+job: mcp-release | conclusion: success | tag: v2.0.9
+--- staging dir ---
+total 28
+drwxr-xr-x  2 runner runner 4096 Sep  2 00:12 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 00:12 ..
+-rw-r--r--  1 runner runner   51 Sep  2 00:12 mcp-release-build.log
+-rw-r--r--  1 runner runner  282 Sep  2 00:12 mcp-release-install.log
+-rw-r--r--  1 runner runner   23 Sep  2 00:12 mcp-release-progress.log
+-rw-r--r--  1 runner runner  521 Sep  2 00:12 mcp-release-test.log
+-rw-r--r--  1 runner runner   73 Sep  2 00:12 mcp-release-v2.0.9.marker
