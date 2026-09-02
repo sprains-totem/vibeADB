@@ -50,8 +50,19 @@ export class Relay {
     }
 
     if (url.pathname === "/device") {
+      // 协议代数门槛：旧版本客户端（无 gen 或 gen 更低）在握手阶段直接拒绝，
+      // 防 App 更新后遗留的僵尸网关循环抢占 device 腿（互踢风暴）
+      const gen = parseInt(url.searchParams.get("gen") ?? "0", 10);
+      if (!(gen >= 1)) {
+        return json({ error: "stale client: please update the app" }, 409);
+      }
+      const existing = this.state.getWebSockets("device")[0] as unknown as WsLike | undefined;
+      const prevGen = (existing?.deserializeAttachment() as { gen?: number } | undefined)?.gen ?? 0;
+      if (gen < prevGen) {
+        return json({ error: "stale device connection (newer app version is active)" }, 409);
+      }
       const pair = new WebSocketPair();
-      this.addDevice(pair[1] as unknown as WsLike);
+      this.addDevice(pair[1] as unknown as WsLike, gen);
       return ws101(pair[0]);
     }
 
@@ -88,7 +99,7 @@ export class Relay {
   }
 
   /** 手机出站连接（device 腿）。latest-wins：替换旧 device 腿。 */
-  addDevice(ws: WsLike): void {
+  addDevice(ws: WsLike, gen: number): void {
     for (const old of this.state.getWebSockets("device") as unknown as WsLike[]) {
       try {
         old.close(4005, "replaced by newer device connection");
@@ -97,7 +108,7 @@ export class Relay {
       }
     }
     this.state.acceptWebSocket(ws as unknown as WebSocket, ["device"]);
-    ws.serializeAttachment({ role: "device" });
+    ws.serializeAttachment({ role: "device", gen });
   }
 
   /** client 腿。调用方需保证 device 在线；latest-wins 替换旧 client。 */
@@ -196,10 +207,12 @@ export default {
     }
 
     let deviceId = "";
+    let gen = 0;
     let role: "device" | "client" | null = null;
     if (path === "/device" && request.method === "GET") {
       role = "device";
       deviceId = request.headers.get("x-device-id") ?? "";
+      gen = parseInt(url.searchParams.get("gen") ?? "0", 10);
     } else if (path === "/connect" && request.method === "GET") {
       role = "client";
       deviceId = url.searchParams.get("deviceId") ?? "";
@@ -219,6 +232,7 @@ export default {
     const doPath = role === "device" ? "/device" : "/connect";
     const relayUrl = new URL(`https://relay.internal${doPath}`);
     relayUrl.searchParams.set("deviceId", deviceId.toLowerCase());
+    if (role === "device") relayUrl.searchParams.set("gen", String(gen));
     return stub.fetch(new Request(relayUrl.toString(), request));
   },
 };

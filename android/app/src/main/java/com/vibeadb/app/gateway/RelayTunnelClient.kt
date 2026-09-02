@@ -18,7 +18,7 @@ class RelayTunnelClient(
     deviceId: String,
     private val password: String,
     private val onState: (String) -> Unit,
-) : WebSocketClient(URI("wss://$relayHost/device")) {
+) : WebSocketClient(URI("wss://$relayHost/device?deviceId=$deviceId&gen=$GATEWAY_GEN")) {
 
     private val dispatcher = Dispatcher(ProcessCommandRunner())
 
@@ -125,5 +125,10 @@ class RelayTunnelClient(
             buf.flip()
             send(buf)
         }
+    }
+
+    companion object {
+        /** 网关协议代数（与 AIDL 版本同步递增；中继据此拒绝旧版僵尸连接） */
+        const val GATEWAY_GEN = 3
     }
 }

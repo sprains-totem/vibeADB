@@ -43,7 +43,7 @@ class FakeState {
   }
 
   getWebSockets(tag: string): FakeWS[] {
-    // 模拟 workers 运行时：被 close 的 socket 会被移除
+    // 模拟 workers 运行时：�?close �?socket 会被移除
     const list = (this.byTag.get(tag) ?? []).filter((ws) => !ws.closed);
     this.byTag.set(tag, list);
     return list;
@@ -67,7 +67,7 @@ describe("edge relay pairing", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device);
+    relay.addDevice(device, 3);
     expect(relay.addClient(client)).toBe(true);
     expect(device.textFrames()).toContain(JSON.stringify({ op: "edge", event: "paired" }));
   });
@@ -76,7 +76,7 @@ describe("edge relay pairing", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device);
+    relay.addDevice(device, 3);
     relay.addClient(client);
 
     const bin = new ArrayBuffer(8);
@@ -93,7 +93,7 @@ describe("edge relay pairing", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device);
+    relay.addDevice(device, 3);
     relay.addClient(client);
 
     relay.onClose(device);
@@ -106,7 +106,7 @@ describe("edge relay pairing", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device);
+    relay.addDevice(device, 3);
     relay.addClient(client);
 
     relay.onClose(client);
@@ -119,14 +119,14 @@ describe("edge relay pairing", () => {
     const oldDevice = new FakeWS();
     const client = new FakeWS();
     const newDevice = new FakeWS();
-    relay.addDevice(oldDevice);
+    relay.addDevice(oldDevice, 2);
     relay.addClient(client);
 
-    relay.addDevice(newDevice);
+    relay.addDevice(newDevice, 3);
 
     expect(oldDevice.closed?.code).toBe(4005);
     expect(newDevice.closed).toBeNull();
-    // 旧 device 腿被替换后，新腿仍与 client 配对
+    // �?device 腿被替换后，新腿仍与 client 配对
     relay.onMessage(newDevice, "ping-frame");
     expect(client.sent).toContain("ping-frame");
   });
@@ -136,14 +136,14 @@ describe("edge relay pairing", () => {
     const device = new FakeWS();
     const oldClient = new FakeWS();
     const newClient = new FakeWS();
-    relay.addDevice(device);
+    relay.addDevice(device, 3);
     relay.addClient(oldClient);
 
     relay.addClient(newClient);
 
     expect(oldClient.closed?.code).toBe(4006);
     expect(newClient.closed).toBeNull();
-    // 后续 device 帧只发给新 client
+    // 后续 device 帧只发给�?client
     relay.onMessage(device, "frame-for-client");
     expect(oldClient.sent).not.toContain("frame-for-client");
     expect(newClient.sent).toContain("frame-for-client");
@@ -156,3 +156,4 @@ describe("edge relay pairing", () => {
     expect(stray.closed?.code).toBe(4001);
   });
 });
+

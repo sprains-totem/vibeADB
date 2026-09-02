@@ -1,7 +1,6 @@
 package com.vibeadb.app.shizuku
 
 import android.content.Context
-import android.os.Process
 import com.vibeadb.app.core.RingLog
 import com.vibeadb.app.gateway.RelayTunnelClient
 
@@ -86,7 +85,8 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
     override fun destroy() {
         RingLog.log("gw", "destroy")
         stopTunnel()
-        Process.killProcess(Process.myPid())
+        // 注意：UserService 运行在 Shizuku 的进程中，禁止 killProcess(myPid)。
+        // System.exit 与 Shizuku 官方示例一致（Shizuku 自行管理进程生命周期）。
         System.exit(0)
     }
 
