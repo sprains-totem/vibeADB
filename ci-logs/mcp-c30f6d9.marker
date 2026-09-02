@@ -1,0 +1,9 @@
+job: mcp | conclusion: success | sha: c30f6d9
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  2 00:09 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 00:09 ..
+-rw-r--r--  1 runner runner   51 Sep  2 00:09 mcp-build.log
+-rw-r--r--  1 runner runner   66 Sep  2 00:09 mcp-c30f6d9.marker
+-rw-r--r--  1 runner runner  282 Sep  2 00:09 mcp-install.log
+-rw-r--r--  1 runner runner  520 Sep  2 00:09 mcp-test.log
