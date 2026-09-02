@@ -202,7 +202,12 @@ function json(data: unknown, status = 200): Response {
 }
 
 function ws101(client: WebSocket): Response {
-  return new Response(null, { status: 101, webSocket: client });
+  try {
+    return new Response(null, { status: 101, webSocket: client } as any);
+  } catch {
+    // Node.js test environment mock (undici fetch restricts status to 200..599)
+    return { status: 101, webSocket: client } as unknown as Response;
+  }
 }
 
 /** Worker 入口 */

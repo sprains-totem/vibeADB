@@ -30,6 +30,13 @@ class FakeWS implements WsLike {
   }
 }
 
+if (typeof (globalThis as any).WebSocketPair === "undefined") {
+  (globalThis as any).WebSocketPair = class {
+    0 = new FakeWS();
+    1 = new FakeWS();
+  };
+}
+
 class FakeState {
   private byTag = new Map<string, FakeWS[]>();
 
