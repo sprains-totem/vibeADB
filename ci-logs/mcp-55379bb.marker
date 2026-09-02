@@ -1,0 +1,9 @@
+job: mcp | conclusion: success | sha: 55379bb
+--- staging dir ---
+total 24
+drwxr-xr-x  2 runner runner 4096 Sep  2 15:33 .
+drwxr-xr-x 10 runner runner 4096 Sep  2 15:33 ..
+-rw-r--r--  1 runner runner   66 Sep  2 15:33 mcp-55379bb.marker
+-rw-r--r--  1 runner runner   51 Sep  2 15:33 mcp-build.log
+-rw-r--r--  1 runner runner  282 Sep  2 15:33 mcp-install.log
+-rw-r--r--  1 runner runner  521 Sep  2 15:33 mcp-test.log
