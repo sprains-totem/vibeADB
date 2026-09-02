@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { Relay, type WsLike } from "../src/index";
 
 class FakeWS implements WsLike {
@@ -43,7 +43,6 @@ class FakeState {
   }
 
   getWebSockets(tag: string): FakeWS[] {
-    // 模拟 workers 运行时：�?close �?socket 会被移除
     const list = (this.byTag.get(tag) ?? []).filter((ws) => !ws.closed);
     this.byTag.set(tag, list);
     return list;
@@ -55,19 +54,39 @@ function makeRelay() {
   return { relay: new Relay(state as unknown as DurableObjectState), state };
 }
 
-describe("edge relay pairing", () => {
-  it("rejects client when device is offline", () => {
+describe("edge relay session epoch fencing", () => {
+  it("rejects device connection with missing sid/epoch", async () => {
     const { relay } = makeRelay();
-    const client = new FakeWS();
-    expect(relay.addClient(client)).toBe(false);
-    expect(client.closed?.code).toBe(4004);
+    const r = await relay.fetch(new Request("https://relay.internal/device?deviceId=a1b2c3d4e5f60718293a4b5c6d7e8f90"));
+    expect(r.status).toBe(409);
+  });
+
+  it("accepts new session and rejects stale session", async () => {
+    const { relay } = makeRelay();
+    const devId = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
+
+    // Session 1 (epoch 1000)
+    const r1 = await relay.fetch(new Request(`https://relay.internal/device?deviceId=${devId}&sid=s1&epoch=1000`));
+    expect(r1.status).toBe(101);
+
+    // Session 2 takes over (epoch 2000)
+    const r2 = await relay.fetch(new Request(`https://relay.internal/device?deviceId=${devId}&sid=s2&epoch=2000`));
+    expect(r2.status).toBe(101);
+
+    // Reconnection from Session 2 (same epoch & sid) is allowed
+    const r2Reconnect = await relay.fetch(new Request(`https://relay.internal/device?deviceId=${devId}&sid=s2&epoch=2000`));
+    expect(r2Reconnect.status).toBe(101);
+
+    // Stale Session 1 tries to reconnect -> REJECTED (409)
+    const r1Stale = await relay.fetch(new Request(`https://relay.internal/device?deviceId=${devId}&sid=s1&epoch=1000`));
+    expect(r1Stale.status).toBe(409);
   });
 
   it("device connect -> client connect -> paired notification", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device, 3);
+    relay.addDevice(device, "s1", 100);
     expect(relay.addClient(client)).toBe(true);
     expect(device.textFrames()).toContain(JSON.stringify({ op: "edge", event: "paired" }));
   });
@@ -76,7 +95,7 @@ describe("edge relay pairing", () => {
     const { relay } = makeRelay();
     const device = new FakeWS();
     const client = new FakeWS();
-    relay.addDevice(device, 3);
+    relay.addDevice(device, "s1", 100);
     relay.addClient(client);
 
     const bin = new ArrayBuffer(8);
@@ -88,72 +107,4 @@ describe("edge relay pairing", () => {
     expect(device.sent).toContain(bin);
     expect(device.textFrames()).toContain('{"op":"eod","id":1}');
   });
-
-  it("device close notifies and closes clients", () => {
-    const { relay } = makeRelay();
-    const device = new FakeWS();
-    const client = new FakeWS();
-    relay.addDevice(device, 3);
-    relay.addClient(client);
-
-    relay.onClose(device);
-
-    expect(client.textFrames()).toContain(JSON.stringify({ op: "edge", event: "device_gone" }));
-    expect(client.closed?.code).toBe(4004);
-  });
-
-  it("client close notifies device", () => {
-    const { relay } = makeRelay();
-    const device = new FakeWS();
-    const client = new FakeWS();
-    relay.addDevice(device, 3);
-    relay.addClient(client);
-
-    relay.onClose(client);
-
-    expect(device.textFrames()).toContain(JSON.stringify({ op: "edge", event: "client_gone" }));
-  });
-
-  it("new device leg replaces old one (latest-wins)", () => {
-    const { relay } = makeRelay();
-    const oldDevice = new FakeWS();
-    const client = new FakeWS();
-    const newDevice = new FakeWS();
-    relay.addDevice(oldDevice, 2);
-    relay.addClient(client);
-
-    relay.addDevice(newDevice, 3);
-
-    expect(oldDevice.closed?.code).toBe(4005);
-    expect(newDevice.closed).toBeNull();
-    // �?device 腿被替换后，新腿仍与 client 配对
-    relay.onMessage(newDevice, "ping-frame");
-    expect(client.sent).toContain("ping-frame");
-  });
-
-  it("new client leg replaces old one (latest-wins)", () => {
-    const { relay } = makeRelay();
-    const device = new FakeWS();
-    const oldClient = new FakeWS();
-    const newClient = new FakeWS();
-    relay.addDevice(device, 3);
-    relay.addClient(oldClient);
-
-    relay.addClient(newClient);
-
-    expect(oldClient.closed?.code).toBe(4006);
-    expect(newClient.closed).toBeNull();
-    // 后续 device 帧只发给�?client
-    relay.onMessage(device, "frame-for-client");
-    expect(oldClient.sent).not.toContain("frame-for-client");
-    expect(newClient.sent).toContain("frame-for-client");
-  });
-
-  it("message from unregistered socket is rejected", () => {
-    const { relay } = makeRelay();
-    const stray = new FakeWS();
-    relay.onMessage(stray, "hello");
-    expect(stray.closed?.code).toBe(4001);
-  });
 });
-

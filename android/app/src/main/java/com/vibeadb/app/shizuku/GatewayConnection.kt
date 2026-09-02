@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
+import com.vibeadb.app.BuildConfig
 import rikka.shizuku.Shizuku
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -17,7 +18,14 @@ object GatewayConnection : ServiceConnection {
     private var args: Shizuku.UserServiceArgs? = null
 
     @Synchronized
-    fun ensureStarted(context: Context, password: String, relayHost: String, deviceId: String): Boolean {
+    fun ensureStarted(
+        context: Context,
+        password: String,
+        relayHost: String,
+        deviceId: String,
+        sid: String,
+        epoch: Long
+    ): Boolean {
         if (!Shizuku.pingBinder()) {
             throw IllegalStateException("Shizuku 未运行")
         }
@@ -28,7 +36,8 @@ object GatewayConnection : ServiceConnection {
         latch = CountDownLatch(1)
         val a = Shizuku.UserServiceArgs(ComponentName(context, GatewayService::class.java))
             .processNameSuffix("gateway")
-            .version(3)
+            .daemon(false) // 非 daemon 模式：宿主解除绑定或死亡时，Shizuku 自动清理
+            .version(BuildConfig.VERSION_CODE)
             .tag("vibeadb")
         args = a
         Shizuku.bindUserService(a, this)
@@ -36,7 +45,7 @@ object GatewayConnection : ServiceConnection {
             throw IllegalStateException("网关绑定超时")
         }
         val b = binder ?: throw IllegalStateException("网关绑定失败")
-        return b.start(password, relayHost, deviceId)
+        return b.start(password, relayHost, deviceId, sid, epoch)
     }
 
     @Synchronized

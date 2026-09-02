@@ -12,7 +12,9 @@ import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.vibeadb.app.core.Pairing
+import com.vibeadb.app.core.Password
 import com.vibeadb.app.core.Prefs
+import com.vibeadb.app.core.RingLog
 import com.vibeadb.app.shizuku.GatewayConnection
 import kotlin.concurrent.thread
 
@@ -37,7 +39,6 @@ class SessionService : Service() {
                 else -> stopSelf()
             }
         } catch (t: Throwable) {
-            // 主线程异常不再直接闪退，转成 UI 可见的错误
             SessionState.update(SessionUiState.Failed("服务启动异常: ${t.javaClass.simpleName}: ${t.message}"))
             stopSelf()
         }
@@ -61,7 +62,6 @@ class SessionService : Service() {
         try {
             ServiceCompat.startForeground(this, NOTIF_ID, notif, type)
         } catch (t: Throwable) {
-            // 类型被系统拒绝时降级为无类型前台服务（类型按 manifest 声明解析）
             startForeground(NOTIF_ID, notif)
         }
     }
@@ -84,26 +84,35 @@ class SessionService : Service() {
             if (prefs.relayHost.isBlank()) {
                 throw IllegalStateException("未配置边缘中继地址（设置页填写）")
             }
-            com.vibeadb.app.core.RingLog.log("app", "ensureStarted (relay=${prefs.relayHost})")
-            val ok = GatewayConnection.ensureStarted(this, prefs.password, prefs.relayHost, prefs.deviceId)
-            com.vibeadb.app.core.RingLog.log("app", "ensureStarted -> $ok")
+            val sid = Password.deviceId().take(16)
+            val epoch = System.currentTimeMillis()
+            RingLog.log("app", "ensureStarted (relay=${prefs.relayHost}, sid=$sid, epoch=$epoch)")
+            val ok = GatewayConnection.ensureStarted(
+                this,
+                prefs.password,
+                prefs.relayHost,
+                prefs.deviceId,
+                sid,
+                epoch
+            )
+            RingLog.log("app", "ensureStarted -> $ok")
             if (!ok) throw IllegalStateException("网关启动失败")
             val pairing = Pairing.worker(prefs.relayHost, prefs.deviceId, prefs.password)
             // 网关状态轮询（跨进程，AIDL）
             while (!stopped) {
                 val st = GatewayConnection.currentStatus() ?: "idle"
                 SessionState.update(
-                    when (st) {
-                        "online" -> SessionUiState.Running(prefs.relayHost, pairing, true)
-                        "connecting", "retrying" ->
-                            SessionUiState.Starting("连接边缘中继（$st），断线自动重连…")
+                    when {
+                        st == "online" -> SessionUiState.Running(prefs.relayHost, pairing, true)
+                        st.startsWith("connecting") || st.startsWith("retrying") ->
+                            SessionUiState.Starting("连接边缘中继（$st）…")
                         else -> SessionUiState.Starting("等待网关…")
                     }
                 )
-                Thread.sleep(2000)
+                Thread.sleep(1000)
             }
         } catch (t: Throwable) {
-            com.vibeadb.app.core.RingLog.log("app", "session error: ${t.javaClass.simpleName}: ${t.message}")
+            RingLog.log("app", "session error: ${t.javaClass.simpleName}: ${t.message}")
             if (!stopped) {
                 SessionState.update(SessionUiState.Failed(t.message ?: t.javaClass.simpleName))
                 stopSessionInternal()
@@ -119,7 +128,7 @@ class SessionService : Service() {
     private fun stopSessionInternal() {
         stopped = true
         sessionActive = false
-        com.vibeadb.app.core.RingLog.log("app", "session stopped")
+        RingLog.log("app", "session stopped")
         try { GatewayConnection.stopSession(this) } catch (_: Throwable) {}
         try { wakeLock?.release() } catch (_: Throwable) {}
         wakeLock = null

@@ -3,13 +3,11 @@ package com.vibeadb.app.shizuku
 import android.content.Context
 import com.vibeadb.app.core.RingLog
 import com.vibeadb.app.gateway.RelayTunnelClient
+import kotlin.system.exitProcess
 
 /**
  * Shizuku UserService：以 shell/root UID 在独立进程运行。
  * v2：进程内维护到边缘中继的出站 WebSocket（自动重连）。
- *
- * 关键：start() 可能被多次调用（重开会话/重试）。用代际计数器保证同一进程
- * 永远只有一个活动循环——新 start 使旧循环立即失效退出，杜绝双腿互踢。
  */
 class GatewayService(private val context: Context?) : IGatewayService.Stub() {
 
@@ -20,22 +18,22 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
 
     @Volatile private var state = "idle"
 
-    override fun start(password: String?, relayHost: String?, deviceId: String?): Boolean {
-        if (password.isNullOrEmpty() || relayHost.isNullOrEmpty() || deviceId.isNullOrEmpty()) {
-            RingLog.log("gw", "start rejected: empty args")
+    override fun start(password: String?, relayHost: String?, deviceId: String?, sid: String?, epoch: Long): Boolean {
+        if (password.isNullOrEmpty() || relayHost.isNullOrEmpty() || deviceId.isNullOrEmpty() || sid.isNullOrEmpty() || epoch <= 0) {
+            RingLog.log("gw", "start rejected: empty/invalid args")
             return false
         }
-        RingLog.log("gw", "start requested (relay=$relayHost)")
-        stopTunnel() // 先终止旧循环（内部会递增 generation）
+        RingLog.log("gw", "start requested (relay=$relayHost, sid=$sid, epoch=$epoch)")
+        stopTunnel()
         stopped = false
-        generation += 1 // 为本次 start 分配新代际（必须在 stopTunnel 之后）
+        generation += 1
         val myGen = generation
         val t = Thread {
             var backoff = 2L
             while (!stopped && generation == myGen) {
                 RingLog.log("gw", "connecting (gen=$myGen)")
                 state = "connecting"
-                val c = RelayTunnelClient(relayHost, deviceId, password) { s -> state = s }
+                val c = RelayTunnelClient(relayHost, deviceId, sid, epoch, password) { s -> state = s }
                 client = c
                 val opened = try {
                     c.connectBlocking(15, java.util.concurrent.TimeUnit.SECONDS)
@@ -73,8 +71,9 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
         return true
     }
 
-    override fun status(): String = when (state) {
-        "retrying", "connecting" -> "$state | lastClose: ${client?.lastCloseInfo ?: "-"} | lastOpen: ${client?.lastOpenInfo ?: "-"}"
+    override fun status(): String = when {
+        state == "retrying" || state == "connecting" ->
+            "$state | lastClose: ${client?.lastCloseInfo ?: "-"} | lastOpen: ${client?.lastOpenInfo ?: "-"}"
         else -> state
     }
 
@@ -83,17 +82,15 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
     override fun clearLogs() = RingLog.clear()
 
     override fun destroy() {
-        RingLog.log("gw", "destroy")
+        RingLog.log("gw", "destroy called by Shizuku")
         stopTunnel()
-        // 注意：UserService 运行在 Shizuku 的进程中，禁止 killProcess(myPid)。
-        // System.exit 与 Shizuku 官方示例一致（Shizuku 自行管理进程生命周期）。
-        System.exit(0)
+        exitProcess(0)
     }
 
     @Synchronized
     private fun stopTunnel() {
         stopped = true
-        generation += 1 // 唤醒/终止所有旧循环
+        generation += 1
         loopThread?.interrupt()
         loopThread = null
         try { client?.shutdown() } catch (_: Throwable) {}
@@ -101,7 +98,6 @@ class GatewayService(private val context: Context?) : IGatewayService.Stub() {
     }
 
     companion object {
-        /** 循环代际：每次 start/stop 递增，旧代循环自行退出 */
         @Volatile private var generation = 0
     }
 }

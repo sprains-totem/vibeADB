@@ -2,23 +2,22 @@
  * vibeADB 边缘中继（Durable Object）+ Worker 入口
  *
  * 每个 deviceId 一个 DO 实例（idFromName）。两条 WebSocket 腿：
- *   - device 腿：Android App 出站连接（/device，header X-Device-Id）
- *   - client 腿：MCP 服务器 / 调试客户端连接（/connect?deviceId=）
+ *   - device 腿：Android App 出站连接（/device?deviceId=X&sid=Y&epoch=Z）
+ *   - client 腿：MCP 服务器 / 调试客户端连接（/connect?deviceId=X）
  * DO 只做"配对管道"：透明转发帧（文本/二进制原样），不解析、不改写业务协议。
  *
- * 密码鉴权是端到端的：client 的 auth 帧原样转发给手机，由手机校验——边缘永远接触不到密码。
- * 配对策略：device 腿 latest-wins（新连接替换旧连接，防 squat 永久占坑）；
- *          client 腿同时只允许一条（新连接替换旧连接）；device 不在线时 client 直接被拒。
- * 边缘控制帧：{"op":"edge","event":"paired"|"client_gone"|"device_gone"}，两端自行忽略/处理。
- * 协议见 protocol/PROTOCOL.md §2。
- * 注意：Relay 类必须定义在入口文件内（wrangler 的 DO 导出检测不识别转发导出）。
+ * 【会话栅栏（Session Epoch Fencing）】：
+ *   每次 App 启动新会话生成新的 (sid, epoch)。
+ *   - epoch > activeEpoch：新会话上线，驱逐旧会话并记录新 epoch
+ *   - epoch === activeEpoch && sid === activeSid：当前会话正常重连（如网络抖动）
+ *   - 其它（旧 epoch 或不匹配的 sid）：一律 HTTP 409 拒绝！
+ *   此机制彻底根除多进程/旧版僵尸互踢问题。
  */
 
 export interface Env {
   RELAY: DurableObjectNamespace;
 }
 
-/** 与测试/运行时解耦的最小 WebSocket 接口 */
 export interface WsLike {
   send(message: string | ArrayBuffer): void;
   close(code?: number, reason?: string): void;
@@ -35,6 +34,9 @@ export function isValidDeviceId(id: string): boolean {
 }
 
 export class Relay {
+  private activeEpoch = 0;
+  private activeSid = "";
+
   constructor(private readonly state: DurableObjectState) {}
 
   /** Worker 转发进来的升级请求路由 */
@@ -50,19 +52,26 @@ export class Relay {
     }
 
     if (url.pathname === "/device") {
-      // 协议代数门槛：旧版本客户端（无 gen 或 gen 更低）在握手阶段直接拒绝，
-      // 防 App 更新后遗留的僵尸网关循环抢占 device 腿（互踢风暴）
-      const gen = parseInt(url.searchParams.get("gen") ?? "0", 10);
-      if (!(gen >= 1)) {
-        return json({ error: "stale client: please update the app" }, 409);
+      const sid = url.searchParams.get("sid") ?? "";
+      const epoch = parseInt(url.searchParams.get("epoch") ?? "0", 10);
+      if (!sid || !epoch) {
+        return json({ error: "stale client: missing sid/epoch, please update the app" }, 409);
       }
-      const existing = this.state.getWebSockets("device")[0] as unknown as WsLike | undefined;
-      const prevGen = (existing?.deserializeAttachment() as { gen?: number } | undefined)?.gen ?? 0;
-      if (gen < prevGen) {
-        return json({ error: "stale device connection (newer app version is active)" }, 409);
+
+      // 会话栅栏判定
+      if (epoch > this.activeEpoch) {
+        // 新会话接管
+        this.activeEpoch = epoch;
+        this.activeSid = sid;
+      } else if (epoch === this.activeEpoch && sid === this.activeSid) {
+        // 同一会话网络重连，允许
+      } else {
+        // 来自旧进程/旧会话的僵尸连接，直接拒绝
+        return json({ error: "stale session: rejected by epoch fence" }, 409);
       }
+
       const pair = new WebSocketPair();
-      this.addDevice(pair[1] as unknown as WsLike, gen);
+      this.addDevice(pair[1] as unknown as WsLike, sid, epoch);
       return ws101(pair[0]);
     }
 
@@ -98,20 +107,20 @@ export class Relay {
     }
   }
 
-  /** 手机出站连接（device 腿）。latest-wins：替换旧 device 腿。 */
-  addDevice(ws: WsLike, gen: number): void {
+  /** 手机出站连接（device 腿）。新合法会话接管时替换旧 socket */
+  addDevice(ws: WsLike, sid: string, epoch: number): void {
     for (const old of this.state.getWebSockets("device") as unknown as WsLike[]) {
       try {
-        old.close(4005, "replaced by newer device connection");
+        old.close(4005, "replaced by newer session");
       } catch {
         /* ignore */
       }
     }
     this.state.acceptWebSocket(ws as unknown as WebSocket, ["device"]);
-    ws.serializeAttachment({ role: "device", gen });
+    ws.serializeAttachment({ role: "device", sid, epoch });
   }
 
-  /** client 腿。调用方需保证 device 在线；latest-wins 替换旧 client。 */
+  /** client 腿 */
   addClient(ws: WsLike): boolean {
     if (this.state.getWebSockets("device").length === 0) {
       try {
@@ -134,6 +143,20 @@ export class Relay {
     return true;
   }
 
+  /** Hibernation API 运行时回调：收到帧 → 转发 */
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    this.onMessage(ws as unknown as WsLike, message);
+  }
+
+  /** Hibernation API 运行时回调：连接关闭 → 通知对端 */
+  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
+    this.onClose(ws as unknown as WsLike);
+  }
+
+  async webSocketError(ws: WebSocket, err: unknown): Promise<void> {
+    /* ignore */
+  }
+
   /** 帧转发：device<->client，文本/二进制原样透传 */
   onMessage(ws: WsLike, message: string | ArrayBuffer): void {
     const role = this.roleOf(ws);
@@ -152,20 +175,6 @@ export class Relay {
         /* ignore */
       }
     }
-  }
-
-  /** Hibernation API 运行时回调：收到帧 → 转发 */
-  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
-    this.onMessage(ws as unknown as WsLike, message);
-  }
-
-  /** Hibernation API 运行时回调：连接关闭 → 通知对端 */
-  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
-    this.onClose(ws as unknown as WsLike);
-  }
-
-  async webSocketError(ws: WebSocket, err: unknown): Promise<void> {
-    /* ignore */
   }
 
   onClose(ws: WsLike): void {
@@ -207,12 +216,10 @@ export default {
     }
 
     let deviceId = "";
-    let gen = 0;
     let role: "device" | "client" | null = null;
     if (path === "/device" && request.method === "GET") {
       role = "device";
-      deviceId = request.headers.get("x-device-id") ?? "";
-      gen = parseInt(url.searchParams.get("gen") ?? "0", 10);
+      deviceId = request.headers.get("x-device-id") || (url.searchParams.get("deviceId") ?? "");
     } else if (path === "/connect" && request.method === "GET") {
       role = "client";
       deviceId = url.searchParams.get("deviceId") ?? "";
@@ -231,8 +238,10 @@ export default {
     // 归一化后转发升级请求给 DO（DO 内部路由：/device、/connect）
     const doPath = role === "device" ? "/device" : "/connect";
     const relayUrl = new URL(`https://relay.internal${doPath}`);
+    for (const [k, v] of url.searchParams.entries()) {
+      relayUrl.searchParams.set(k, v);
+    }
     relayUrl.searchParams.set("deviceId", deviceId.toLowerCase());
-    if (role === "device") relayUrl.searchParams.set("gen", String(gen));
     return stub.fetch(new Request(relayUrl.toString(), request));
   },
 };

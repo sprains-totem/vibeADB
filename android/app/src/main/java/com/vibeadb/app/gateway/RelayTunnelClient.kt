@@ -10,15 +10,16 @@ import javax.net.ssl.SSLSocketFactory
 
 /**
  * v2 出站隧道：App（UserService 进程，shell/root UID）**主动连出**到边缘中继的 device 腿。
- * 帧转发：client 腿（经 DO 透明管道）→ 这里 → Dispatcher 执行 → 结果帧原路返回。
- * auth 由本地校验（端到端，边缘不接触密码）。所有连接事件进 RingLog。
+ * URL 包含 sid 与 epoch 参与中继端会话栅栏（Session Epoch Fencing），彻底杜绝旧僵尸连接抢占。
  */
 class RelayTunnelClient(
     relayHost: String,
     deviceId: String,
+    sid: String,
+    epoch: Long,
     private val password: String,
     private val onState: (String) -> Unit,
-) : WebSocketClient(URI("wss://$relayHost/device?deviceId=$deviceId&gen=$GATEWAY_GEN")) {
+) : WebSocketClient(URI("wss://$relayHost/device?deviceId=$deviceId&sid=$sid&epoch=$epoch")) {
 
     private val dispatcher = Dispatcher(ProcessCommandRunner())
 
@@ -38,9 +39,8 @@ class RelayTunnelClient(
         } catch (_: Throwable) {
         }
         // 30s WS ping 保活：防运营商 NAT/防火墙掐 60s 空闲长连接
-        // （CF 边缘直接应答 pong，不唤醒 DO、不计请求额度）
         connectionLostTimeout = 30
-        RingLog.log("ws", "connect -> wss://$relayHost/device (deviceId=$deviceId)")
+        RingLog.log("ws", "connect -> wss://$relayHost/device (sid=$sid, epoch=$epoch)")
     }
 
     override fun onOpen(handshakedata: ServerHandshake?) {
@@ -125,10 +125,5 @@ class RelayTunnelClient(
             buf.flip()
             send(buf)
         }
-    }
-
-    companion object {
-        /** 网关协议代数（与 AIDL 版本同步递增；中继据此拒绝旧版僵尸连接） */
-        const val GATEWAY_GEN = 3
     }
 }
